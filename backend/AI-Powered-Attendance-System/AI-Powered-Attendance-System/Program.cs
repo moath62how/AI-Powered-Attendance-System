@@ -1,3 +1,5 @@
+using AI_Powered_Attendance_System.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AI_Powered_Attendance_System
 {
@@ -10,6 +12,11 @@ namespace AI_Powered_Attendance_System
             // Add services to the container.
 
             builder.Services.AddControllers();
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DefaultConnection")));
+
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
