@@ -1,0 +1,44 @@
+### .NET (backend) ###
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+backend/**/.vs/
+*.suo
+*.userosscache
+*.sln.docstates
+
+### Angular / Node (web) ###
+web/node_modules/
+web/dist/
+web/.angular/
+web/npm-debug.log*
+web/.env
+
+### Python (ai) ###
+ai/venv/
+ai/env/
+ai/__pycache__/
+ai/**/__pycache__/
+ai/*.pyc
+ai/.ipynb_checkpoints/
+ai/data/*
+!ai/data/.gitkeep
+
+### Mobile ###
+mobile/node_modules/
+mobile/build/
+mobile/.gradle/
+mobile/*.apk
+mobile/*.ipa
+
+### Secrets / env ###
+.env
+*.env.local
+appsettings.Development.json
+**/secrets.json
+
+### OS / Editor ###
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
