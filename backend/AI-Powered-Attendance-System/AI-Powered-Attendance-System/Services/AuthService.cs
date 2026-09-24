@@ -10,11 +10,12 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
-
-    public AuthService(AppDbContext db, IPasswordHasher passwordHasher)
+    private readonly IJwtService _jwtService;
+    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtService jwtService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
+        _jwtService = jwtService;
     }
 
     // Assumes the request was already validated by RegisterRequestValidator.
@@ -73,4 +74,34 @@ public class AuthService : IAuthService
         Role = user.Role.ToString(),
         CreatedAt = user.CreatedAt
     };
+    public async Task<LoginResponseDto> LoginAsync(
+    LoginRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var user = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
+        if (user is null)
+            throw new UnauthorizedAccessException("Invalid email or password.");
+
+        var passwordIsValid = _passwordHasher.Verify(
+            request.Password,
+            user.PasswordHash);
+
+        if (!passwordIsValid)
+            throw new UnauthorizedAccessException("Invalid email or password.");
+
+        var token = _jwtService.GenerateToken(
+            user.Id,
+            user.Email,
+            user.Role.ToString());
+
+        return new LoginResponseDto
+        {
+            Token = token
+        };
+    }
 }

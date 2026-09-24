@@ -33,4 +33,16 @@ public class AuthController : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, user);
     }
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login(
+    LoginRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var user = await _authService.LoginAsync(request, cancellationToken);
+
+        return Ok(user);
+    }
 }
