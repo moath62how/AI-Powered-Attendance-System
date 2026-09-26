@@ -14,13 +14,13 @@ namespace AI_Powered_Attendance_System.Services
             _configuration = configuration;
         }
 
-        public string GenerateToken(Guid userId, string email, string role)
+        public (string AccessToken, DateTime ExpiresAtUtc) GenerateToken( Guid userId,string email, string role)
         {
             var key = _configuration["Jwt:Key"]!;
             var issuer = _configuration["Jwt:Issuer"]!;
             var audience = _configuration["Jwt:Audience"]!;
             var duration = int.Parse(_configuration["Jwt:DurationInMinutes"]!);
-
+            var expiresAtUtc = DateTime.UtcNow.AddMinutes(duration);
             var claims = new[]
             {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
@@ -42,7 +42,10 @@ namespace AI_Powered_Attendance_System.Services
                 expires: DateTime.UtcNow.AddMinutes(duration),
                 signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var accessToken = new JwtSecurityTokenHandler()
+               .WriteToken(token);
+
+            return (accessToken, expiresAtUtc);
         }
     }
 }

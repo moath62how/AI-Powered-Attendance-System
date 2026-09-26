@@ -1,6 +1,7 @@
 ﻿using AI_Powered_Attendance_System.DTOs.Auth;
 using AI_Powered_Attendance_System.Services;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI_Powered_Attendance_System.Controllers;
@@ -44,5 +45,37 @@ public class AuthController : ControllerBase
         var user = await _authService.LoginAsync(request, cancellationToken);
 
         return Ok(user);
+    }
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(
+    RefreshRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var result = await _authService.RefreshAsync(
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+    [Authorize]
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout(
+    RefreshRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        await _authService.LogoutAsync(
+            request,
+            cancellationToken);
+
+        return Ok(new
+        {
+            message = "Logged out successfully."
+        });
     }
 }

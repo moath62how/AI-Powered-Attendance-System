@@ -52,6 +52,7 @@ namespace AI_Powered_Attendance_System
             builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IJwtService, JwtService>();
+            builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 

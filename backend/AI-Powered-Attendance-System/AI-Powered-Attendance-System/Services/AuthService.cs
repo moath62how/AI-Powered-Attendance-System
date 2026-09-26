@@ -11,11 +11,13 @@ public class AuthService : IAuthService
     private readonly AppDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
-    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtService jwtService)
+    private readonly IRefreshTokenService _refreshTokenService;
+    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtService jwtService, IRefreshTokenService refreshTokenService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _refreshTokenService = refreshTokenService;
     }
 
     // Assumes the request was already validated by RegisterRequestValidator.
@@ -93,15 +95,87 @@ public class AuthService : IAuthService
 
         if (!passwordIsValid)
             throw new UnauthorizedAccessException("Invalid email or password.");
+        var tokenResult = _jwtService.GenerateToken(
+            user.Id,
+            user.Email,
+            user.Role.ToString());
+        var refreshTokenResult = _refreshTokenService.CreateToken();
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = refreshTokenResult.TokenHash,
+            CreatedAtUtc = DateTime.UtcNow,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(7)
+        };
 
-        var token = _jwtService.GenerateToken(
+        _db.RefreshTokens.Add(refreshToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return new LoginResponseDto
+        {
+            AccessToken = tokenResult.AccessToken,
+            RefreshToken = refreshTokenResult.Token,
+            ExpiresAtUtc = tokenResult.ExpiresAtUtc,
+            User = ToDto(user)
+        };
+    }
+    public async Task<LoginResponseDto> RefreshAsync(
+    RefreshRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var tokenHash = _refreshTokenService.HashToken(request.RefreshToken);
+
+        var refreshToken = await _db.RefreshTokens
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(
+                r => r.TokenHash == tokenHash,
+                cancellationToken);
+
+        if (refreshToken is null)
+            throw new UnauthorizedAccessException("Invalid refresh token.");
+
+        if (refreshToken.RevokedAtUtc.HasValue)
+            throw new UnauthorizedAccessException("Refresh token has been revoked.");
+
+        if (refreshToken.ExpiresAtUtc <= DateTime.UtcNow)
+            throw new UnauthorizedAccessException("Refresh token has expired.");
+
+        var user = refreshToken.User;
+
+        var tokenResult = _jwtService.GenerateToken(
             user.Id,
             user.Email,
             user.Role.ToString());
 
         return new LoginResponseDto
         {
-            Token = token
+            AccessToken = tokenResult.AccessToken,
+            RefreshToken = request.RefreshToken,
+            ExpiresAtUtc = tokenResult.ExpiresAtUtc,
+            User = ToDto(user)
         };
+    }
+    public async Task LogoutAsync(
+    RefreshRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var tokenHash = _refreshTokenService.HashToken(request.RefreshToken);
+
+        var refreshToken = await _db.RefreshTokens
+            .FirstOrDefaultAsync(
+                r => r.TokenHash == tokenHash,
+                cancellationToken);
+
+        if (refreshToken is null)
+            throw new UnauthorizedAccessException("Invalid refresh token.");
+
+        if (refreshToken.RevokedAtUtc.HasValue)
+            throw new UnauthorizedAccessException("Refresh token has already been revoked.");
+
+        refreshToken.RevokedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 }
