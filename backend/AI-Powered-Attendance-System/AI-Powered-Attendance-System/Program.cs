@@ -1,82 +1,104 @@
 using AI_Powered_Attendance_System.Data;
-using Microsoft.EntityFrameworkCore;
-using FluentValidation;
-using AI_Powered_Attendance_System.Services;
 using AI_Powered_Attendance_System.Middleware;
+using AI_Powered_Attendance_System.Services;
+using AI_Powered_Attendance_System.Settings;
+using AI_Powered_Attendance_System.OpenApi;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
 
+namespace AI_Powered_Attendance_System;
 
-namespace AI_Powered_Attendance_System
+public class Program
 {
-    public class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+        // Add services to the container.
+        builder.Services.AddControllers();
 
-            builder.Services.AddControllers();
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+        // Database
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(
+                builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+        // JWT Settings
+        builder.Services.Configure<JwtSettings>(
+            builder.Configuration.GetSection("Jwt"));
 
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    builder.Configuration["Jwt:Key"]!))
-        };
-    });
+        // JWT Token Service
+        builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-            builder.Services.AddAuthorization();
+        // JWT Authentication
+        var jwtSettings = builder.Configuration
+            .GetSection("Jwt")
+            .Get<JwtSettings>()!;
 
-            // validation
-            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+        var jwtSecret = builder.Configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException(
+                "Jwt:Secret is not configured. Set it via User Secrets or environment variables.");
 
-            // add db context
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
-                    builder.Configuration.GetConnectionString("DefaultConnection")));
-
-            //PasswordHasher
-            builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
-            builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IJwtService, JwtService>();
-            builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
-
-            var app = builder.Build();
-
-            app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-
-                // Configure the HTTP request pipeline.
-                if (app.Environment.IsDevelopment())
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
             {
-                app.MapOpenApi();
-            }
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings.Issuer,
 
-            app.UseHttpsRedirection();
-            app.UseAuthentication();
-            app.UseAuthorization();
+                    ValidateAudience = true,
+                    ValidAudience = jwtSettings.Audience,
 
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSecret)),
 
-            app.MapControllers();
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
 
-            app.Run();
-        }
+        builder.Services.AddAuthorization();
+
+        // Validation
+        builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+        // Password Hasher
+        builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+
+        // Auth Service
+        builder.Services.AddScoped<IAuthService, AuthService>();
+
+        // OpenAPI
+        builder.Services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+        });
+
+        var app = builder.Build();
+
+        // Global Exception Handling
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+        // OpenAPI
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi();
+            app.MapScalarApiReference();
+        }   
+
+        app.UseHttpsRedirection();
+
+        // Authentication must come before Authorization
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        app.Run();
     }
 }

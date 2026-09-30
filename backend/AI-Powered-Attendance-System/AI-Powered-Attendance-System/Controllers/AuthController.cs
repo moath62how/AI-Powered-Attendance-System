@@ -1,8 +1,8 @@
 ﻿using AI_Powered_Attendance_System.DTOs.Auth;
 using AI_Powered_Attendance_System.Services;
 using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AI_Powered_Attendance_System.Controllers;
 
@@ -12,11 +12,16 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IValidator<RegisterRequestDto> _registerValidator;
+    private readonly IValidator<LoginRequestDto> _loginValidator;
 
-    public AuthController(IAuthService authService, IValidator<RegisterRequestDto> registerValidator)
+    public AuthController(
+        IAuthService authService,
+        IValidator<RegisterRequestDto> registerValidator,
+        IValidator<LoginRequestDto> loginValidator)
     {
         _authService = authService;
         _registerValidator = registerValidator;
+        _loginValidator = loginValidator;
     }
 
     [HttpPost("register")]
@@ -34,48 +39,35 @@ public class AuthController : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, user);
     }
-    [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(
-    LoginRequestDto request,
-    CancellationToken cancellationToken)
-    {
-        var user = await _authService.LoginAsync(request, cancellationToken);
 
-        return Ok(user);
-    }
-    [HttpPost("refresh")]
-    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Refresh(
-    RefreshRequestDto request,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await _authService.RefreshAsync(
-            request,
-            cancellationToken);
+        var validation = await _loginValidator.ValidateAsync(request, cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(new ValidationProblemDetails(validation.ToDictionary()));
+
+        var result = await _authService.LoginAsync(request, cancellationToken);
 
         return Ok(result);
     }
-    [Authorize]
-    [HttpPost("logout")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Logout(
-    RefreshRequestDto request,
-    CancellationToken cancellationToken)
-    {
-        await _authService.LogoutAsync(
-            request,
-            cancellationToken);
 
-        return Ok(new
-        {
-            message = "Logged out successfully."
-        });
+
+    [HttpGet("me")]
+    [Authorize(Roles = "Lecturer")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        return Ok(new { userId, email, role });
     }
 }
