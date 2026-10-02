@@ -32,6 +32,8 @@ public class Program
 
         // JWT Token Service
         builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+        // Refresh Token Service
+        builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
         // JWT Authentication
         var jwtSettings = builder.Configuration

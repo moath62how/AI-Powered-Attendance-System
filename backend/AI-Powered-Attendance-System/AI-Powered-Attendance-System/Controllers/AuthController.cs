@@ -13,15 +13,24 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IValidator<RegisterRequestDto> _registerValidator;
     private readonly IValidator<LoginRequestDto> _loginValidator;
-
+    private readonly IValidator<ForgotPasswordRequestDto> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordRequestDto> _resetPasswordValidator;
+    private readonly IValidator<RefreshTokenRequestDto> _refreshTokenValidator;
     public AuthController(
         IAuthService authService,
         IValidator<RegisterRequestDto> registerValidator,
-        IValidator<LoginRequestDto> loginValidator)
+        IValidator<LoginRequestDto> loginValidator,
+           IValidator<ForgotPasswordRequestDto> forgotPasswordValidator,
+    IValidator<ResetPasswordRequestDto> resetPasswordValidator,
+    IValidator<RefreshTokenRequestDto> refreshTokenValidator)
     {
         _authService = authService;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
+        _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
+        _refreshTokenValidator = refreshTokenValidator;
+
     }
 
     [HttpPost("register")]
@@ -56,6 +65,89 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(
+    RefreshTokenRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var validation = await _refreshTokenValidator.ValidateAsync(
+            request,
+            cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(
+                new ValidationProblemDetails(validation.ToDictionary()));
+
+        var result = await _authService.RefreshAsync(
+            request,
+            cancellationToken);
+
+        if (result is null)
+            return Unauthorized(new
+            {
+                message = "Invalid or expired refresh token."
+            });
+
+        return Ok(result);
+    }
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword(
+    ForgotPasswordRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var validation = await _forgotPasswordValidator.ValidateAsync(
+            request,
+            cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(
+                new ValidationProblemDetails(validation.ToDictionary()));
+
+        var token = await _authService.ForgotPasswordAsync(
+            request,
+            cancellationToken);
+
+        return Ok(new
+        {
+            message = "Password reset token generated.",
+            token
+        });
+    }
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword(
+    ResetPasswordRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var validation = await _resetPasswordValidator.ValidateAsync(
+            request,
+            cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(
+                new ValidationProblemDetails(validation.ToDictionary()));
+
+        var result = await _authService.ResetPasswordAsync(
+            request,
+            cancellationToken);
+
+        if (!result)
+            return BadRequest(new
+            {
+                message = "Invalid or expired reset token."
+            });
+
+        return Ok(new
+        {
+            message = "Password has been reset successfully."
+        });
+    }
 
     [HttpGet("me")]
     [Authorize(Roles = "Lecturer")]
