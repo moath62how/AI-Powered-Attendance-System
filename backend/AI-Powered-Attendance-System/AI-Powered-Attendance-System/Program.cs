@@ -29,12 +29,14 @@ public class Program
         // JWT Settings
         builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("Jwt"));
-
+        // email Settings
+        builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("Email"));
         // JWT Token Service
         builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
         // Refresh Token Service
         builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-
+        builder.Services.AddScoped<IEmailService, EmailService>();
         // JWT Authentication
         var jwtSettings = builder.Configuration
             .GetSection("Jwt")

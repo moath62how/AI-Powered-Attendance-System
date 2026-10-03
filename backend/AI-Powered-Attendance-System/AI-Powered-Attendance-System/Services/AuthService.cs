@@ -13,12 +13,14 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IRefreshTokenService _refreshTokenService;
-    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenService refreshTokenService)
+    private readonly IEmailService _emailService;
+    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenService refreshTokenService, IEmailService emailService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _refreshTokenService = refreshTokenService;
+        _emailService = emailService;
     }
 
     // Assumes the request was already validated by RegisterRequestValidator.
@@ -179,8 +181,8 @@ public class AuthService : IAuthService
         user.PasswordResetTokenUsedAt = null;
 
         await _db.SaveChangesAsync(cancellationToken);
-
-        // Temporary: return the token until we implement email sending
+        await _emailService.SendPasswordResetEmailAsync( user.Email,token,cancellationToken);
+       
         return token;
     }
 
