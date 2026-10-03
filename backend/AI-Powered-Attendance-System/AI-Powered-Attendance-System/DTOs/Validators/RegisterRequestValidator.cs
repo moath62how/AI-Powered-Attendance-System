@@ -36,7 +36,7 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequestDto>
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
-            .MaximumLength(72).WithMessage("Password must not exceed 72 characters.") // BCrypt only uses the first 72 bytes
+            .MaximumLength(72).WithMessage("Password must not exceed 72 characters.") 
             .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
             .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
@@ -46,5 +46,10 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequestDto>
             .NotEmpty().WithMessage("Role is required.")
             .Must(role => AllowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
             .WithMessage("Role must be either 'Student' or 'Lecturer'.");
+
+        RuleFor(x => x.StudentId)
+            .NotEmpty().WithMessage("Student ID is required for Student registration.")
+            .Matches(@"^[0-9]{6,20}$").WithMessage("Student ID must be 6 to 20 digits.")
+            .When(x => string.Equals(x.Role, "Student", StringComparison.OrdinalIgnoreCase));
     }
 }

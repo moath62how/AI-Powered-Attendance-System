@@ -9,9 +9,8 @@ public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
     {
         RuleLevelCascadeMode = CascadeMode.Stop;
 
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Email is not a valid email address.");
+        RuleFor(x => x.Identifier)
+            .NotEmpty().WithMessage("Email or Student ID is required.");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");

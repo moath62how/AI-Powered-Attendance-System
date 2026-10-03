@@ -22,6 +22,9 @@ namespace AI_Powered_Attendance_System.Entities
         [MaxLength(255)]
         public string Email { get; set; } = string.Empty;
 
+        [MaxLength(20)]
+        public string? StudentId { get; set; }
+
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 

@@ -27,9 +27,19 @@ public class AuthService : IAuthService
     public async Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
     {
         var email = request.Email.Trim().ToLowerInvariant();
+        var role = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
+
+        // Only Students carry a StudentId; it's ignored for any other role
+        // even if the client sends one, so it can never collide by accident.
+        string? studentId = role == UserRole.Student
+            ? request.StudentId!.Trim()
+            : null;
 
         if (await EmailExistsAsync(email, cancellationToken))
             throw new ConflictException("An account with this email already exists.");
+
+        if (studentId is not null && await StudentIdExistsAsync(studentId, cancellationToken))
+            throw new ConflictException("An account with this Student ID already exists.");
 
         var now = DateTime.UtcNow;
 
@@ -40,8 +50,9 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             PhoneNumber = request.PhoneNumber.Trim(),
             Email = email,
+            StudentId = studentId,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = Enum.Parse<UserRole>(request.Role, ignoreCase: true),
+            Role = role,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -54,12 +65,15 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateException)
         {
-            // Two requests with the same email passed the check above at the same time;
-            // the unique index rejected the second one.
+            // Two requests passed the checks above at the same time;
+            // one of the unique indexes rejected the second one.
             if (await EmailExistsAsync(email, cancellationToken))
                 throw new ConflictException("An account with this email already exists.");
 
-            // Not a duplicate-email problem, so let it surface as a 500.
+            if (studentId is not null && await StudentIdExistsAsync(studentId, cancellationToken))
+                throw new ConflictException("An account with this Student ID already exists.");
+
+            // Not a duplicate-email or duplicate-StudentId problem, so let it surface as a 500.
             throw;
         }
 
@@ -68,15 +82,28 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
+        var identifier = request.Identifier.Trim();
 
-        var user = await _db.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        // Simple heuristic: an email always contains '@'; a Student ID never does.
+        var isEmail = identifier.Contains('@');
 
-        // Same message whether the email is unknown or the password is wrong,
-        // so a caller can't use this endpoint to discover which emails are registered.
+        User? user;
+        if (isEmail)
+        {
+            var email = identifier.ToLowerInvariant();
+            user = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        }
+        else
+        {
+            user = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.StudentId == identifier, cancellationToken);
+        }
+
+        // Same message whether the identifier is unknown or the password is wrong,
+        // so a caller can't use this endpoint to discover which accounts exist.
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedException("Invalid email or password.");
+            throw new UnauthorizedException("Invalid credentials.");
 
         var (token, expiresAt) = _jwtTokenService.GenerateToken(user);
         var oldRefreshTokens = await _db.RefreshTokens
@@ -146,6 +173,9 @@ public class AuthService : IAuthService
     private Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken) =>
         _db.Users.AsNoTracking().AnyAsync(u => u.Email == email, cancellationToken);
 
+    private Task<bool> StudentIdExistsAsync(string studentId, CancellationToken cancellationToken) =>
+        _db.Users.AsNoTracking().AnyAsync(u => u.StudentId == studentId, cancellationToken);
+
     private static UserDto ToDto(User user) => new()
     {
         Id = user.Id,
@@ -153,6 +183,7 @@ public class AuthService : IAuthService
         LastName = user.LastName,
         PhoneNumber = user.PhoneNumber,
         Email = user.Email,
+        StudentId = user.StudentId,
         Role = user.Role.ToString(),
         CreatedAt = user.CreatedAt
     };
@@ -181,8 +212,8 @@ public class AuthService : IAuthService
         user.PasswordResetTokenUsedAt = null;
 
         await _db.SaveChangesAsync(cancellationToken);
-        await _emailService.SendPasswordResetEmailAsync( user.Email,token,cancellationToken);
-       
+        await _emailService.SendPasswordResetEmailAsync(user.Email, token, cancellationToken);
+
         return token;
     }
 
@@ -208,7 +239,7 @@ public class AuthService : IAuthService
         if (user.PasswordResetTokenUsedAt is not null)
             return false;
 
-        
+
         byte[] tokenBytes;
 
         try
@@ -220,7 +251,7 @@ public class AuthService : IAuthService
             return false;
         }
 
-       
+
         var tokenHashBytes = SHA256.HashData(tokenBytes);
         var tokenHash = Convert.ToBase64String(tokenHashBytes);
 
@@ -229,10 +260,10 @@ public class AuthService : IAuthService
 
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
 
-        
+
         user.PasswordResetTokenUsedAt = DateTime.UtcNow;
 
-        
+
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
 
