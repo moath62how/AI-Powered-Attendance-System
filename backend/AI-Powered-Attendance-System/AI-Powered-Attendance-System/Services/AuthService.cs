@@ -3,6 +3,7 @@ using AI_Powered_Attendance_System.DTOs.Auth;
 using AI_Powered_Attendance_System.Entities;
 using AI_Powered_Attendance_System.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace AI_Powered_Attendance_System.Services;
 
@@ -10,23 +11,35 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtService _jwtService;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly IRefreshTokenService _refreshTokenService;
-    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtService jwtService, IRefreshTokenService refreshTokenService)
+    private readonly IEmailService _emailService;
+    public AuthService(AppDbContext db, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenService refreshTokenService, IEmailService emailService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
-        _jwtService = jwtService;
+        _jwtTokenService = jwtTokenService;
         _refreshTokenService = refreshTokenService;
+        _emailService = emailService;
     }
 
     // Assumes the request was already validated by RegisterRequestValidator.
     public async Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
     {
         var email = request.Email.Trim().ToLowerInvariant();
+        var role = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
+
+        // Only Students carry a StudentId; it's ignored for any other role
+        // even if the client sends one, so it can never collide by accident.
+        string? studentId = role == UserRole.Student
+            ? request.StudentId!.Trim()
+            : null;
 
         if (await EmailExistsAsync(email, cancellationToken))
             throw new ConflictException("An account with this email already exists.");
+
+        if (studentId is not null && await StudentIdExistsAsync(studentId, cancellationToken))
+            throw new ConflictException("An account with this Student ID already exists.");
 
         var now = DateTime.UtcNow;
 
@@ -37,8 +50,9 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             PhoneNumber = request.PhoneNumber.Trim(),
             Email = email,
+            StudentId = studentId,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = Enum.Parse<UserRole>(request.Role, ignoreCase: true),
+            Role = role,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -51,78 +65,80 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateException)
         {
-            // Two requests with the same email passed the check above at the same time;
-            // the unique index rejected the second one.
+            // Two requests passed the checks above at the same time;
+            // one of the unique indexes rejected the second one.
             if (await EmailExistsAsync(email, cancellationToken))
                 throw new ConflictException("An account with this email already exists.");
 
-            // Not a duplicate-email problem, so let it surface as a 500.
+            if (studentId is not null && await StudentIdExistsAsync(studentId, cancellationToken))
+                throw new ConflictException("An account with this Student ID already exists.");
+
+            // Not a duplicate-email or duplicate-StudentId problem, so let it surface as a 500.
             throw;
         }
 
         return ToDto(user);
     }
 
-    private Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken) =>
-        _db.Users.AsNoTracking().AnyAsync(u => u.Email == email, cancellationToken);
-
-    private static UserDto ToDto(User user) => new()
+    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
-        Id = user.Id,
-        FirstName = user.FirstName,
-        LastName = user.LastName,
-        PhoneNumber = user.PhoneNumber,
-        Email = user.Email,
-        Role = user.Role.ToString(),
-        CreatedAt = user.CreatedAt
-    };
-    public async Task<LoginResponseDto> LoginAsync(
-    LoginRequestDto request,
-    CancellationToken cancellationToken = default)
-    {
-        var email = request.Email.Trim().ToLowerInvariant();
+        var identifier = request.Identifier.Trim();
 
-        var user = await _db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        // Simple heuristic: an email always contains '@'; a Student ID never does.
+        var isEmail = identifier.Contains('@');
 
-        if (user is null)
-            throw new UnauthorizedAccessException("Invalid email or password.");
+        User? user;
+        if (isEmail)
+        {
+            var email = identifier.ToLowerInvariant();
+            user = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        }
+        else
+        {
+            user = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.StudentId == identifier, cancellationToken);
+        }
 
-        var passwordIsValid = _passwordHasher.Verify(
-            request.Password,
-            user.PasswordHash);
+        // Same message whether the identifier is unknown or the password is wrong,
+        // so a caller can't use this endpoint to discover which accounts exist.
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            throw new UnauthorizedException("Invalid credentials.");
 
-        if (!passwordIsValid)
-            throw new UnauthorizedAccessException("Invalid email or password.");
-        var tokenResult = _jwtService.GenerateToken(
-            user.Id,
-            user.Email,
-            user.Role.ToString());
-        var refreshTokenResult = _refreshTokenService.CreateToken();
-        var refreshToken = new RefreshToken
+        var (token, expiresAt) = _jwtTokenService.GenerateToken(user);
+        var oldRefreshTokens = await _db.RefreshTokens
+    .Where(r => r.UserId == user.Id && r.RevokedAtUtc == null)
+    .ToListAsync(cancellationToken);
+
+        foreach (var oldToken in oldRefreshTokens)
+        {
+            oldToken.RevokedAtUtc = DateTime.UtcNow;
+        }
+        var (refreshToken, refreshTokenHash) = _refreshTokenService.CreateToken();
+
+        var refreshTokenEntity = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
-            TokenHash = refreshTokenResult.TokenHash,
-            CreatedAtUtc = DateTime.UtcNow,
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(7)
+            TokenHash = refreshTokenHash,
+            ///for changing
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(7),
+            CreatedAtUtc = DateTime.UtcNow
         };
 
-        _db.RefreshTokens.Add(refreshToken);
+        _db.RefreshTokens.Add(refreshTokenEntity);
 
         await _db.SaveChangesAsync(cancellationToken);
-
-        return new LoginResponseDto
+        return new AuthResponseDto
         {
-            AccessToken = tokenResult.AccessToken,
-            RefreshToken = refreshTokenResult.Token,
-            ExpiresAtUtc = tokenResult.ExpiresAtUtc,
+            AccessToken = token,
+            RefreshToken = refreshToken,
+            ExpiresAtUtc = expiresAt,
             User = ToDto(user)
         };
     }
-    public async Task<LoginResponseDto> RefreshAsync(
-    RefreshRequestDto request,
+    public async Task<AuthResponseDto?> RefreshAsync(
+    RefreshTokenRequestDto request,
     CancellationToken cancellationToken = default)
     {
         var tokenHash = _refreshTokenService.HashToken(request.RefreshToken);
@@ -134,48 +150,127 @@ public class AuthService : IAuthService
                 cancellationToken);
 
         if (refreshToken is null)
-            throw new UnauthorizedAccessException("Invalid refresh token.");
+            return null;
 
-        if (refreshToken.RevokedAtUtc.HasValue)
-            throw new UnauthorizedAccessException("Refresh token has been revoked.");
+        if (refreshToken.RevokedAtUtc is not null)
+            return null;
 
         if (refreshToken.ExpiresAtUtc <= DateTime.UtcNow)
-            throw new UnauthorizedAccessException("Refresh token has expired.");
+            return null;
 
         var user = refreshToken.User;
 
-        var tokenResult = _jwtService.GenerateToken(
-            user.Id,
-            user.Email,
-            user.Role.ToString());
+        var (accessToken, expiresAt) = _jwtTokenService.GenerateToken(user);
 
-        return new LoginResponseDto
+        return new AuthResponseDto
         {
-            AccessToken = tokenResult.AccessToken,
+            AccessToken = accessToken,
             RefreshToken = request.RefreshToken,
-            ExpiresAtUtc = tokenResult.ExpiresAtUtc,
+            ExpiresAtUtc = expiresAt,
             User = ToDto(user)
         };
     }
-    public async Task LogoutAsync(
-    RefreshRequestDto request,
+    private Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken) =>
+        _db.Users.AsNoTracking().AnyAsync(u => u.Email == email, cancellationToken);
+
+    private Task<bool> StudentIdExistsAsync(string studentId, CancellationToken cancellationToken) =>
+        _db.Users.AsNoTracking().AnyAsync(u => u.StudentId == studentId, cancellationToken);
+
+    private static UserDto ToDto(User user) => new()
+    {
+        Id = user.Id,
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        PhoneNumber = user.PhoneNumber,
+        Email = user.Email,
+        StudentId = user.StudentId,
+        Role = user.Role.ToString(),
+        CreatedAt = user.CreatedAt
+    };
+
+    public async Task<string?> ForgotPasswordAsync(
+    ForgotPasswordRequestDto request,
     CancellationToken cancellationToken = default)
     {
-        var tokenHash = _refreshTokenService.HashToken(request.RefreshToken);
+        var email = request.Email.Trim().ToLowerInvariant();
 
-        var refreshToken = await _db.RefreshTokens
-            .FirstOrDefaultAsync(
-                r => r.TokenHash == tokenHash,
-                cancellationToken);
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
-        if (refreshToken is null)
-            throw new UnauthorizedAccessException("Invalid refresh token.");
+        if (user is null)
+            return null;
 
-        if (refreshToken.RevokedAtUtc.HasValue)
-            throw new UnauthorizedAccessException("Refresh token has already been revoked.");
+        var tokenBytes = RandomNumberGenerator.GetBytes(32);
+        var token = Convert.ToBase64String(tokenBytes);
 
-        refreshToken.RevokedAtUtc = DateTime.UtcNow;
+
+        var tokenHashBytes = SHA256.HashData(tokenBytes);
+        var tokenHash = Convert.ToBase64String(tokenHashBytes);
+
+        user.PasswordResetTokenHash = tokenHash;
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+        user.PasswordResetTokenUsedAt = null;
 
         await _db.SaveChangesAsync(cancellationToken);
+        await _emailService.SendPasswordResetEmailAsync(user.Email, token, cancellationToken);
+
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordAsync(
+    ResetPasswordRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
+        if (user is null)
+            return false;
+
+        if (user.PasswordResetTokenHash is null)
+            return false;
+
+        if (user.PasswordResetTokenExpiresAt is null ||
+            user.PasswordResetTokenExpiresAt <= DateTime.UtcNow)
+            return false;
+
+        if (user.PasswordResetTokenUsedAt is not null)
+            return false;
+
+
+        byte[] tokenBytes;
+
+        try
+        {
+            tokenBytes = Convert.FromBase64String(request.Token);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+
+        var tokenHashBytes = SHA256.HashData(tokenBytes);
+        var tokenHash = Convert.ToBase64String(tokenHashBytes);
+
+        if (tokenHash != user.PasswordResetTokenHash)
+            return false;
+
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+
+
+        user.PasswordResetTokenUsedAt = DateTime.UtcNow;
+
+
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 }

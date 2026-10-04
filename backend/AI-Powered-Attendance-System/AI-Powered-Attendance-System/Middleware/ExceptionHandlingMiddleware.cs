@@ -31,6 +31,7 @@ public class ExceptionHandlingMiddleware
         var (status, title) = ex switch
         {
             ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
             _ => (StatusCodes.Status500InternalServerError, "Server error")
         };
 

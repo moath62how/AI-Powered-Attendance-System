@@ -1,4 +1,4 @@
-@host = https://localhost:7000
+@host = https://localhost:7127
 
 ### Register Student
 POST {{host}}/api/auth/register
@@ -11,4 +11,63 @@ Content-Type: application/json
   "email": "ahmed@gmail.com",
   "password": "Ahmed@123",
   "role": "Student"
+}
+
+### Register with duplicate email
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Ahmed2",
+  "lastName": "Ali2",
+  "phoneNumber": "01111111111",
+  "email": "AHMED@GMAIL.COM",
+  "password": "Ahmed@456",
+  "role": "Student"
+}
+
+
+### Login Test
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ahmed@gmail.com",
+  "password": "Ahmed@12"
+}
+
+### 6. Login with correct credentials -> 200 with a token
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sara@example.com",
+  "password": "Str0ng!Pass"
+}
+
+### 7. Login with wrong password -> 401
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sara@example.com",
+  "password": "WrongPassword1!"
+}
+
+### 8. Login with unknown email -> 401
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody@example.com",
+  "password": "Str0ng!Pass"
+}
+
+### 9. Login with missing password -> 400
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sara@example.com",
+  "password": ""
 }

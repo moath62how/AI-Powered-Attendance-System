@@ -22,10 +22,19 @@ namespace AI_Powered_Attendance_System.Entities
         [MaxLength(255)]
         public string Email { get; set; } = string.Empty;
 
+        [MaxLength(20)]
+        public string? StudentId { get; set; }
+
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
+        public string? PasswordResetTokenHash { get; set; }
+
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
+        public DateTime? PasswordResetTokenUsedAt { get; set; }
         [Required]
+
         public UserRole Role { get; set; }
 
         public DateTime CreatedAt { get; set; }
