@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../widgets/auth_atmosphere.dart';
 import '../../widgets/auth_back_button.dart';
+import 'set_password/set_password_screen.dart';
 
 /// Verification Code (OTP) Screen — Figma node 178:592 & 178:593
 /// User enters the 5-digit verification code sent to their email.
@@ -35,7 +36,6 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   bool _isLoading = false;
 
   bool get _isComplete => _controllers.every((c) => c.text.trim().isNotEmpty);
-  String get _enteredCode => _controllers.map((c) => c.text.trim()).join();
 
   @override
   void dispose() {
@@ -88,13 +88,17 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Code $_enteredCode verified successfully!'),
-        backgroundColor: AppColors.ink,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetPasswordScreen(
+          email: widget.email,
+        ),
       ),
     );
   }
+
+  // ignore: unused_element
+  String get _enteredCode => _controllers.map((c) => c.text.trim()).join();
 
   Future<void> _onResend() async {
     ScaffoldMessenger.of(context).showSnackBar(
