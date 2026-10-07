@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
 
 enum LoginMethod { email, studentId }
@@ -76,10 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Positioned(
               top: size.height * 0.06,
               left: -blobSize * 0.30,
-              child: _AtmosphereBlob(
-                color: AppColors.yellow,
-                size: blobSize,
-              ),
+              child: _AtmosphereBlob(color: AppColors.yellow, size: blobSize),
             ),
             Positioned(
               top: size.height * 0.10,
@@ -124,7 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
@@ -190,7 +190,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFECEAE5).withValues(alpha: 0.8),
+                              color: const Color(0xFFECEAE5)
+                                  .withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -198,7 +199,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Expanded(
                                   child: _TabButton(
                                     label: 'University Email',
-                                    isSelected: _selectedMethod == LoginMethod.email,
+                                    isSelected:
+                                        _selectedMethod == LoginMethod.email,
                                     onTap: () {
                                       setState(() {
                                         _selectedMethod = LoginMethod.email;
@@ -210,7 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Expanded(
                                   child: _TabButton(
                                     label: 'Student ID',
-                                    isSelected: _selectedMethod == LoginMethod.studentId,
+                                    isSelected:
+                                        _selectedMethod ==
+                                        LoginMethod.studentId,
                                     onTap: () {
                                       setState(() {
                                         _selectedMethod = LoginMethod.studentId;
@@ -322,13 +326,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => const ForgotPasswordScreen(),
+                                    builder: (_) =>
+                                        const ForgotPasswordScreen(),
                                   ),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                               ),
                               child: Text(
                                 'Forgot password?',
@@ -386,7 +393,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.cardBorder.withValues(alpha: 0.6),
+                                color: AppColors.cardBorder.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -402,9 +411,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(width: 8),
                                 InkWell(
                                   onTap: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Registration flow coming soon.'),
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const CreateAccountScreen(),
                                       ),
                                     );
                                   },
@@ -484,7 +494,9 @@ class _TabButton extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+              color: isSelected
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary,
             ),
           ),
         ),
@@ -521,10 +533,7 @@ class _CustomTextField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
-      style: GoogleFonts.inter(
-        fontSize: 14,
-        color: AppColors.textPrimary,
-      ),
+      style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: GoogleFonts.inter(
@@ -566,10 +575,7 @@ class _CustomTextField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: AppColors.wrong,
-            width: 1.2,
-          ),
+          borderSide: const BorderSide(color: AppColors.wrong, width: 1.2),
         ),
       ),
     );
@@ -589,10 +595,7 @@ class _AtmosphereBlob extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: 0.50),
-            color.withValues(alpha: 0.0),
-          ],
+          colors: [color.withValues(alpha: 0.50), color.withValues(alpha: 0.0)],
         ),
       ),
     );
