@@ -36,7 +36,7 @@ class _AtmospherePainter extends CustomPainter {
     blob(
       center: Offset(size.width * 0.38, size.height * 0.40),
       radius: size.width * 0.55,
-      color: AppColors.glowYellow,
+      color: AppColors.yellow,
     );
     blob(
       center: Offset(size.width * 0.34, size.height * 0.46),
@@ -51,7 +51,7 @@ class _AtmospherePainter extends CustomPainter {
     blob(
       center: Offset(size.width * 0.58, size.height * 0.58),
       radius: size.width * 0.38,
-      color: AppColors.glowMint,
+      color: AppColors.lightGreen,
     );
   }
 
