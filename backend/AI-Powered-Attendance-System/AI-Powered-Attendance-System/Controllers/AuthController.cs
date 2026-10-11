@@ -16,13 +16,16 @@ public class AuthController : ControllerBase
     private readonly IValidator<ForgotPasswordRequestDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordRequestDto> _resetPasswordValidator;
     private readonly IValidator<RefreshTokenRequestDto> _refreshTokenValidator;
+    private readonly IValidator<UnlinkDeviceRequestDto> _unlinkDeviceValidator;
+
     public AuthController(
         IAuthService authService,
         IValidator<RegisterRequestDto> registerValidator,
         IValidator<LoginRequestDto> loginValidator,
-           IValidator<ForgotPasswordRequestDto> forgotPasswordValidator,
-    IValidator<ResetPasswordRequestDto> resetPasswordValidator,
-    IValidator<RefreshTokenRequestDto> refreshTokenValidator)
+        IValidator<ForgotPasswordRequestDto> forgotPasswordValidator,
+        IValidator<ResetPasswordRequestDto> resetPasswordValidator,
+        IValidator<RefreshTokenRequestDto> refreshTokenValidator,
+        IValidator<UnlinkDeviceRequestDto> unlinkDeviceValidator)
     {
         _authService = authService;
         _registerValidator = registerValidator;
@@ -30,7 +33,7 @@ public class AuthController : ControllerBase
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
         _refreshTokenValidator = refreshTokenValidator;
-
+        _unlinkDeviceValidator = unlinkDeviceValidator;
     }
 
     [HttpPost("register")]
@@ -53,6 +56,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var validation = await _loginValidator.ValidateAsync(request, cancellationToken);
@@ -93,6 +97,7 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -118,6 +123,7 @@ public class AuthController : ControllerBase
             token
         });
     }
+
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -149,8 +155,33 @@ public class AuthController : ControllerBase
         });
     }
 
+    // Self-service: removes the device bound to the caller's own account.
+    // Requires a valid JWT (any role) and the current password as confirmation.
+    [HttpPost("unlink-device")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UnlinkDevice(UnlinkDeviceRequestDto request, CancellationToken cancellationToken)
+    {
+        var validation = await _unlinkDeviceValidator.ValidateAsync(request, cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(new ValidationProblemDetails(validation.ToDictionary()));
+
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        await _authService.UnlinkDeviceAsync(userId, request, cancellationToken);
+
+        return Ok(new { message = "Device unlinked successfully." });
+    }
+
     [HttpGet("me")]
-    [Authorize(Roles = "Lecturer")]
+    [Authorize(Roles = "Student")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult Me()

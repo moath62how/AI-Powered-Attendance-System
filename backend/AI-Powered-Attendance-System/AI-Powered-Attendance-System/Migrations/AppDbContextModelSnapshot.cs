@@ -78,6 +78,13 @@ namespace AI_Powered_Attendance_System.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("MobileDeviceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("MobileDeviceLinkedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -112,6 +119,10 @@ namespace AI_Powered_Attendance_System.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("MobileDeviceId")
+                        .IsUnique()
+                        .HasFilter("[MobileDeviceId] IS NOT NULL");
 
                     b.HasIndex("StudentId")
                         .IsUnique()

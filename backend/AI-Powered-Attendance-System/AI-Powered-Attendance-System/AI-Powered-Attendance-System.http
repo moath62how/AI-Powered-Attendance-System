@@ -71,3 +71,13 @@ Content-Type: application/json
   "email": "sara@example.com",
   "password": ""
 }
+
+### 9. reset
+POST {{host}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "nader@gmail.com",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMGEyYTQ1ZC0yMDkyLTRlNjktOWI2OC0zYzdmM2Y0MDMwMGYiLCJlbWFpbCI6Im5hZGVyQGdtYWlsLmNvbSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlN0dWRlbnQiLCJqdGkiOiJhY2EwYjRjNi04NWNmLTQxNDItOGUxZi0wZDNiMThkYTZmYjQiLCJleHAiOjE3OTE1NDA3NDAsImlzcyI6IkF0dGVuZGFuY2VTeXN0ZW0iLCJhdWQiOiJBdHRlbmRhbmNlU3lzdGVtQ2xpZW50In0.NoOWXvQUnP8mswjGz6zYeHvRSZsdbWIllnIzFOF-sog",
+  "newPassword": "Nader1234#"
+}

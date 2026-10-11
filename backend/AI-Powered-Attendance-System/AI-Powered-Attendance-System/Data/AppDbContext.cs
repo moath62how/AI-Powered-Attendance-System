@@ -21,12 +21,15 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(u => u.Email).IsUnique();
 
-            // Filtered unique index: SQL Server unique indexes only allow ONE null
-            // by default, which would block more than one Lecturer/Admin (null StudentId).
-            // The filter makes uniqueness apply only to rows that actually have a StudentId.
             entity.HasIndex(u => u.StudentId)
                   .IsUnique()
                   .HasFilter("[StudentId] IS NOT NULL");
+
+            // A device can be bound to at most one account at a time.
+            // Filtered because multiple users will have a null MobileDeviceId.
+            entity.HasIndex(u => u.MobileDeviceId)
+                  .IsUnique()
+                  .HasFilter("[MobileDeviceId] IS NOT NULL");
 
             entity.Property(u => u.Role)
                   .HasConversion<string>()

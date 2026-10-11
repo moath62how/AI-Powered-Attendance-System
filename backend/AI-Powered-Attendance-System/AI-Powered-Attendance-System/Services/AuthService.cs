@@ -29,8 +29,6 @@ public class AuthService : IAuthService
         var email = request.Email.Trim().ToLowerInvariant();
         var role = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
 
-        // Only Students carry a StudentId; it's ignored for any other role
-        // even if the client sends one, so it can never collide by accident.
         string? studentId = role == UserRole.Student
             ? request.StudentId!.Trim()
             : null;
@@ -65,15 +63,12 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateException)
         {
-            // Two requests passed the checks above at the same time;
-            // one of the unique indexes rejected the second one.
             if (await EmailExistsAsync(email, cancellationToken))
                 throw new ConflictException("An account with this email already exists.");
 
             if (studentId is not null && await StudentIdExistsAsync(studentId, cancellationToken))
                 throw new ConflictException("An account with this Student ID already exists.");
 
-            // Not a duplicate-email or duplicate-StudentId problem, so let it surface as a 500.
             throw;
         }
 
@@ -83,21 +78,19 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
         var identifier = request.Identifier.Trim();
-
-        // Simple heuristic: an email always contains '@'; a Student ID never does.
         var isEmail = identifier.Contains('@');
 
+        // Tracked (not AsNoTracking) because a mobile login may bind the device
+        // and that change needs to be saved below.
         User? user;
         if (isEmail)
         {
             var email = identifier.ToLowerInvariant();
-            user = await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+            user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
         }
         else
         {
-            user = await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.StudentId == identifier, cancellationToken);
+            user = await _db.Users.FirstOrDefaultAsync(u => u.StudentId == identifier, cancellationToken);
         }
 
         // Same message whether the identifier is unknown or the password is wrong,
@@ -105,10 +98,38 @@ public class AuthService : IAuthService
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException("Invalid credentials.");
 
+        // Device binding only applies to mobile clients; web login stays unrestricted.
+        var isMobile = string.Equals(request.ClientType, "Mobile", StringComparison.OrdinalIgnoreCase);
+
+        if (isMobile)
+        {
+            var deviceId = request.DeviceId!.Trim(); // validator guarantees non-empty for Mobile
+
+            if (user.MobileDeviceId is null)
+            {
+                // Reject if this device is already bound to a DIFFERENT account.
+                var deviceTakenByAnotherAccount = await _db.Users
+                    .AsNoTracking()
+                    .AnyAsync(u => u.MobileDeviceId == deviceId && u.Id != user.Id, cancellationToken);
+
+                if (deviceTakenByAnotherAccount)
+                    throw new ForbiddenException("This device is already linked to another account.");
+
+                // First mobile login: bind this device to the account.
+                user.MobileDeviceId = deviceId;
+                user.MobileDeviceLinkedAtUtc = DateTime.UtcNow;
+            }
+            else if (!string.Equals(user.MobileDeviceId, deviceId, StringComparison.Ordinal))
+            {
+                throw new ForbiddenException("This account is already linked to another device.");
+            }
+            // else: same device as before, proceed normally.
+        }
+
         var (token, expiresAt) = _jwtTokenService.GenerateToken(user);
         var oldRefreshTokens = await _db.RefreshTokens
-    .Where(r => r.UserId == user.Id && r.RevokedAtUtc == null)
-    .ToListAsync(cancellationToken);
+            .Where(r => r.UserId == user.Id && r.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken);
 
         foreach (var oldToken in oldRefreshTokens)
         {
@@ -121,14 +142,23 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             UserId = user.Id,
             TokenHash = refreshTokenHash,
-            ///for changing
             ExpiresAtUtc = DateTime.UtcNow.AddDays(7),
             CreatedAtUtc = DateTime.UtcNow
         };
 
         _db.RefreshTokens.Add(refreshTokenEntity);
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException) when (isMobile)
+        {
+            // Another request bound this device to a different account in the meantime;
+            // the unique index rejected this save.
+            throw new ForbiddenException("This device is already linked to another account.");
+        }
+
         return new AuthResponseDto
         {
             AccessToken = token,
@@ -137,6 +167,7 @@ public class AuthService : IAuthService
             User = ToDto(user)
         };
     }
+
     public async Task<AuthResponseDto?> RefreshAsync(
     RefreshTokenRequestDto request,
     CancellationToken cancellationToken = default)
@@ -170,6 +201,22 @@ public class AuthService : IAuthService
             User = ToDto(user)
         };
     }
+
+    // Unlinks the account's bound mobile device after confirming the current password.
+    public async Task UnlinkDeviceAsync(Guid userId, UnlinkDeviceRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            throw new UnauthorizedException("Invalid password.");
+
+        user.MobileDeviceId = null;
+        user.MobileDeviceLinkedAtUtc = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
     private Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken) =>
         _db.Users.AsNoTracking().AnyAsync(u => u.Email == email, cancellationToken);
 
@@ -202,7 +249,6 @@ public class AuthService : IAuthService
 
         var tokenBytes = RandomNumberGenerator.GetBytes(32);
         var token = Convert.ToBase64String(tokenBytes);
-
 
         var tokenHashBytes = SHA256.HashData(tokenBytes);
         var tokenHash = Convert.ToBase64String(tokenHashBytes);
@@ -239,7 +285,6 @@ public class AuthService : IAuthService
         if (user.PasswordResetTokenUsedAt is not null)
             return false;
 
-
         byte[] tokenBytes;
 
         try
@@ -251,7 +296,6 @@ public class AuthService : IAuthService
             return false;
         }
 
-
         var tokenHashBytes = SHA256.HashData(tokenBytes);
         var tokenHash = Convert.ToBase64String(tokenHashBytes);
 
@@ -259,14 +303,9 @@ public class AuthService : IAuthService
             return false;
 
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-
-
         user.PasswordResetTokenUsedAt = DateTime.UtcNow;
-
-
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
-
         user.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);

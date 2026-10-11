@@ -32,6 +32,7 @@ public class ExceptionHandlingMiddleware
         {
             ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
             _ => (StatusCodes.Status500InternalServerError, "Server error")
         };
 

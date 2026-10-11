@@ -14,5 +14,9 @@ public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");
+
+        RuleFor(x => x.DeviceId)
+            .NotEmpty().WithMessage("Device ID is required for mobile login.")
+            .When(x => string.Equals(x.ClientType, "Mobile", StringComparison.OrdinalIgnoreCase));
     }
 }

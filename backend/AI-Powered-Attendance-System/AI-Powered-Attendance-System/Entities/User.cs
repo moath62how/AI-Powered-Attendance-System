@@ -33,8 +33,14 @@ namespace AI_Powered_Attendance_System.Entities
         public DateTime? PasswordResetTokenExpiresAt { get; set; }
 
         public DateTime? PasswordResetTokenUsedAt { get; set; }
-        [Required]
 
+        
+        [MaxLength(200)]
+        public string? MobileDeviceId { get; set; }
+
+        public DateTime? MobileDeviceLinkedAtUtc { get; set; }
+
+        [Required]
         public UserRole Role { get; set; }
 
         public DateTime CreatedAt { get; set; }
