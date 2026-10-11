@@ -22,6 +22,53 @@ namespace AI_Powered_Attendance_System.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.Course", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CourseCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("CourseName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("LecturerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Semester")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LecturerId");
+
+                    b.ToTable("Courses");
+                });
+
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -118,6 +165,17 @@ namespace AI_Powered_Attendance_System.Migrations
                         .HasFilter("[StudentId] IS NOT NULL");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.Course", b =>
+                {
+                    b.HasOne("AI_Powered_Attendance_System.Entities.User", "Lecturer")
+                        .WithMany()
+                        .HasForeignKey("LecturerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lecturer");
                 });
 
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.RefreshToken", b =>

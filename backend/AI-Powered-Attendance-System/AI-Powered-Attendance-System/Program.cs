@@ -76,7 +76,8 @@ public class Program
 
         // Auth Service
         builder.Services.AddScoped<IAuthService, AuthService>();
-
+        // Course Service
+        builder.Services.AddScoped<ICourseService, CourseService>();
         // OpenAPI
         builder.Services.AddOpenApi(options =>
         {
@@ -99,6 +100,7 @@ public class Program
 
         // Authentication must come before Authorization
         app.UseAuthentication();
+        app.UseStaticFiles();
         app.UseAuthorization();
 
         app.MapControllers();
