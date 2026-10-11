@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<Course> Courses { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -45,5 +46,10 @@ public class AppDbContext : DbContext
                   .HasForeignKey(r => r.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+        modelBuilder.Entity<Course>()
+    .HasOne(c => c.Lecturer)
+    .WithMany()
+    .HasForeignKey(c => c.LecturerId)
+    .OnDelete(DeleteBehavior.Restrict);
     }
 }

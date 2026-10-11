@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "figma": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-figma"
+      ],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "figd_d0INUwYt2Hv5kHGjRR9fsONzZkKHnayU2bh2N2MY"
+      }
+    }
+  }
+}
