@@ -136,6 +136,18 @@ namespace AI_Powered_Attendance_System.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("PasswordResetCodeExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PasswordResetCodeFailedAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PasswordResetCodeSentAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("PasswordResetTokenExpiresAt")
                         .HasColumnType("datetime2");
 

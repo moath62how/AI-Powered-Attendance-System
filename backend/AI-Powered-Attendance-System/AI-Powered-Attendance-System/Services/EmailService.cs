@@ -18,6 +18,7 @@ public class EmailService : IEmailService
     public async Task SendPasswordResetEmailAsync(
         string email,
         string resetToken,
+        string resetCode,
         CancellationToken cancellationToken = default)
     {
         var message = new MimeMessage();
@@ -40,18 +41,34 @@ public class EmailService : IEmailService
             HtmlBody = $"""
                 <h2>Password Reset</h2>
 
-                <p>We received a request to reset your password.</p>
-
                 <p>
-                    Click the link below to reset your password:
+                    We received a request to reset your password.
                 </p>
+
+                <h3>Option 1: Reset using the link</h3>
 
                 <p>
                     <a href="{resetLink}">Reset Password</a>
                 </p>
 
+                <p>This link will expire in 1 hour.</p>
+
+                <hr />
+
+                <h3>Option 2: Reset using the verification code</h3>
+
+                <p>Your 5-digit password reset code is:</p>
+
+                <h1 style="letter-spacing: 8px; font-family: monospace;">
+                    {resetCode}
+                </h1>
+
                 <p>
-                    This link will expire in 1 hour.
+                    This code will expire in 10 minutes.
+                </p>
+
+                <p>
+                    Do not share this code with anyone.
                 </p>
 
                 <p>
@@ -68,7 +85,7 @@ public class EmailService : IEmailService
             _settings.Port,
             SecureSocketOptions.StartTls,
             cancellationToken);
-       
+
         await smtp.AuthenticateAsync(
             _settings.Username,
             _settings.Password,

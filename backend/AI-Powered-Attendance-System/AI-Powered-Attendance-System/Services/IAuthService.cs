@@ -4,12 +4,32 @@ namespace AI_Powered_Attendance_System.Services;
 
 public interface IAuthService
 {
-    Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default);
-    Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
-    Task<string?> ForgotPasswordAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken = default);
-    Task<bool> ResetPasswordAsync(ResetPasswordRequestDto request, CancellationToken cancellationToken = default);
-    Task<AuthResponseDto?> RefreshAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default);
+    Task<UserDto> RegisterAsync(
+        RegisterRequestDto request,
+        CancellationToken cancellationToken = default);
 
-    // Removes the account's mobile device binding. Confirmed with the current password.
-    Task UnlinkDeviceAsync(Guid userId, UnlinkDeviceRequestDto request, CancellationToken cancellationToken = default);
+    Task<AuthResponseDto> LoginAsync(
+        LoginRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<AuthResponseDto?> RefreshAsync(
+        RefreshTokenRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task ForgotPasswordAsync(
+        ForgotPasswordRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ResetPasswordAsync(
+        ResetPasswordRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ResetPasswordWithCodeAsync(
+        ResetPasswordWithCodeRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task UnlinkDeviceAsync(
+        Guid userId,
+        UnlinkDeviceRequestDto request,
+        CancellationToken cancellationToken = default);
 }

@@ -235,55 +235,98 @@ public class AuthService : IAuthService
         CreatedAt = user.CreatedAt
     };
 
-    public async Task<string?> ForgotPasswordAsync(
-    ForgotPasswordRequestDto request,
-    CancellationToken cancellationToken = default)
+    public async Task ForgotPasswordAsync(
+     ForgotPasswordRequestDto request,
+     CancellationToken cancellationToken = default)
     {
         var email = request.Email.Trim().ToLowerInvariant();
 
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+            .FirstOrDefaultAsync(
+                u => u.Email == email,
+                cancellationToken);
 
+        // Do not reveal whether the email exists.
         if (user is null)
-            return null;
+            return;
 
+        var now = DateTime.UtcNow;
+
+        // Allow a resend only after 60 seconds.
+        if (user.PasswordResetCodeSentAtUtc.HasValue &&
+            user.PasswordResetCodeSentAtUtc.Value > now.AddSeconds(-60))
+        {
+            return;
+        }
+
+        // Do not reset the failed-attempt limit while an active code
+        // is locked. The user can use the link or wait for expiration.
+        if (user.PasswordResetCodeFailedAttempts >= 5 &&
+            user.PasswordResetCodeExpiresAtUtc.HasValue &&
+            user.PasswordResetCodeExpiresAtUtc.Value > now)
+        {
+            return;
+        }
+
+        // Reset the counter only when the previous code has expired.
+        if (!user.PasswordResetCodeExpiresAtUtc.HasValue ||
+            user.PasswordResetCodeExpiresAtUtc.Value <= now)
+        {
+            user.PasswordResetCodeFailedAttempts = 0;
+        }
+
+        // Generate the reset-link token.
         var tokenBytes = RandomNumberGenerator.GetBytes(32);
         var token = Convert.ToBase64String(tokenBytes);
 
-        var tokenHashBytes = SHA256.HashData(tokenBytes);
-        var tokenHash = Convert.ToBase64String(tokenHashBytes);
+        var tokenHash = Convert.ToBase64String(
+            SHA256.HashData(tokenBytes));
 
+        // Generate a secure 5-digit code, including possible leading zeros.
+        var code = RandomNumberGenerator
+            .GetInt32(0, 100000)
+            .ToString("D5");
+
+        var codeHash = _passwordHasher.Hash(code);
+
+        // Save reset-link data.
         user.PasswordResetTokenHash = tokenHash;
-        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+        user.PasswordResetTokenExpiresAt = now.AddHours(1);
         user.PasswordResetTokenUsedAt = null;
 
-        await _db.SaveChangesAsync(cancellationToken);
-        await _emailService.SendPasswordResetEmailAsync(user.Email, token, cancellationToken);
+        // Save reset-code data.
+        user.PasswordResetCodeHash = codeHash;
+        user.PasswordResetCodeExpiresAtUtc = now.AddMinutes(10);
+        user.PasswordResetCodeSentAtUtc = now;
 
-        return token;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _emailService.SendPasswordResetEmailAsync(
+            user.Email,
+            token,
+            code,
+            cancellationToken);
     }
 
     public async Task<bool> ResetPasswordAsync(
-    ResetPasswordRequestDto request,
-    CancellationToken cancellationToken = default)
+     ResetPasswordRequestDto request,
+     CancellationToken cancellationToken = default)
     {
         var email = request.Email.Trim().ToLowerInvariant();
 
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+            .FirstOrDefaultAsync(
+                u => u.Email == email,
+                cancellationToken);
 
-        if (user is null)
+        if (user is null ||
+            user.PasswordResetTokenHash is null ||
+            user.PasswordResetTokenExpiresAt is null ||
+            user.PasswordResetTokenExpiresAt <= DateTime.UtcNow ||
+            user.PasswordResetTokenUsedAt is not null)
+        {
             return false;
-
-        if (user.PasswordResetTokenHash is null)
-            return false;
-
-        if (user.PasswordResetTokenExpiresAt is null ||
-            user.PasswordResetTokenExpiresAt <= DateTime.UtcNow)
-            return false;
-
-        if (user.PasswordResetTokenUsedAt is not null)
-            return false;
+        }
 
         byte[] tokenBytes;
 
@@ -296,20 +339,108 @@ public class AuthService : IAuthService
             return false;
         }
 
-        var tokenHashBytes = SHA256.HashData(tokenBytes);
-        var tokenHash = Convert.ToBase64String(tokenHashBytes);
+        var tokenHash = Convert.ToBase64String(
+            SHA256.HashData(tokenBytes));
 
         if (tokenHash != user.PasswordResetTokenHash)
             return false;
 
+        var now = DateTime.UtcNow;
+
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-        user.PasswordResetTokenUsedAt = DateTime.UtcNow;
+        user.UpdatedAt = now;
+
+        // Invalidate the reset link.
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.PasswordResetTokenUsedAt = now;
+
+        // Invalidate the reset code too.
+        user.PasswordResetCodeHash = null;
+        user.PasswordResetCodeExpiresAtUtc = null;
+        user.PasswordResetCodeSentAtUtc = null;
+        user.PasswordResetCodeFailedAttempts = 0;
+
+        await RevokeActiveRefreshTokensAsync(
+            user.Id,
+            now,
+            cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+    public async Task<bool> ResetPasswordWithCodeAsync(
+    ResetPasswordWithCodeRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var user = await _db.Users
+            .FirstOrDefaultAsync(
+                u => u.Email == email,
+                cancellationToken);
+
+        var now = DateTime.UtcNow;
+
+        if (user is null ||
+            user.PasswordResetCodeHash is null ||
+            user.PasswordResetCodeExpiresAtUtc is null ||
+            user.PasswordResetCodeExpiresAtUtc <= now ||
+            user.PasswordResetCodeFailedAttempts >= 5)
+        {
+            return false;
+        }
+
+        // Verify the submitted code against the stored hash.
+        if (!_passwordHasher.Verify(
+                request.Code,
+                user.PasswordResetCodeHash))
+        {
+            user.PasswordResetCodeFailedAttempts++;
+
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return false;
+        }
+
+        // The code is valid.
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+        user.UpdatedAt = now;
+
+        // Invalidate both reset methods.
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.PasswordResetTokenUsedAt = now;
+
+        user.PasswordResetCodeHash = null;
+        user.PasswordResetCodeExpiresAtUtc = null;
+        user.PasswordResetCodeSentAtUtc = null;
+        user.PasswordResetCodeFailedAttempts = 0;
+
+        await RevokeActiveRefreshTokensAsync(
+            user.Id,
+            now,
+            cancellationToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+    private async Task RevokeActiveRefreshTokensAsync(
+    Guid userId,
+    DateTime now,
+    CancellationToken cancellationToken)
+    {
+        var activeTokens = await _db.RefreshTokens
+            .Where(t =>
+                t.UserId == userId &&
+                t.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAtUtc = now;
+        }
     }
 }

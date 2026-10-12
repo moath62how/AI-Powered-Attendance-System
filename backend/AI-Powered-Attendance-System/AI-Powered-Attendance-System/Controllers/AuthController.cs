@@ -16,6 +16,7 @@ public class AuthController : ControllerBase
     private readonly IValidator<ForgotPasswordRequestDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordRequestDto> _resetPasswordValidator;
     private readonly IValidator<RefreshTokenRequestDto> _refreshTokenValidator;
+    private readonly IValidator<ResetPasswordWithCodeRequestDto> _resetPasswordWithCodeValidator;
     private readonly IValidator<UnlinkDeviceRequestDto> _unlinkDeviceValidator;
 
     public AuthController(
@@ -25,7 +26,8 @@ public class AuthController : ControllerBase
         IValidator<ForgotPasswordRequestDto> forgotPasswordValidator,
         IValidator<ResetPasswordRequestDto> resetPasswordValidator,
         IValidator<RefreshTokenRequestDto> refreshTokenValidator,
-        IValidator<UnlinkDeviceRequestDto> unlinkDeviceValidator)
+        IValidator<UnlinkDeviceRequestDto> unlinkDeviceValidator,
+        IValidator<ResetPasswordWithCodeRequestDto> resetPasswordWithCodeValidator)
     {
         _authService = authService;
         _registerValidator = registerValidator;
@@ -34,6 +36,7 @@ public class AuthController : ControllerBase
         _resetPasswordValidator = resetPasswordValidator;
         _refreshTokenValidator = refreshTokenValidator;
         _unlinkDeviceValidator = unlinkDeviceValidator;
+        _resetPasswordWithCodeValidator = resetPasswordWithCodeValidator;
     }
 
     [HttpPost("register")]
@@ -113,14 +116,14 @@ public class AuthController : ControllerBase
             return ValidationProblem(
                 new ValidationProblemDetails(validation.ToDictionary()));
 
-        var token = await _authService.ForgotPasswordAsync(
-            request,
-            cancellationToken);
+        await _authService.ForgotPasswordAsync(
+    request,
+    cancellationToken);
 
         return Ok(new
         {
-            message = "Password reset token generated.",
-            token
+            message =
+                "If an account with this email exists, password reset instructions will be sent."
         });
     }
 
@@ -178,6 +181,43 @@ public class AuthController : ControllerBase
         await _authService.UnlinkDeviceAsync(userId, request, cancellationToken);
 
         return Ok(new { message = "Device unlinked successfully." });
+    }
+    [HttpPost("reset-password-with-code")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails),
+    StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPasswordWithCode(
+    ResetPasswordWithCodeRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var validation =
+            await _resetPasswordWithCodeValidator.ValidateAsync(
+                request,
+                cancellationToken);
+
+        if (!validation.IsValid)
+        {
+            return ValidationProblem(
+                new ValidationProblemDetails(
+                    validation.ToDictionary()));
+        }
+
+        var result = await _authService.ResetPasswordWithCodeAsync(
+            request,
+            cancellationToken);
+
+        if (!result)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid or expired reset code."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Password has been reset successfully."
+        });
     }
 
     [HttpGet("me")]
