@@ -9,7 +9,7 @@ namespace AI_Powered_Attendance_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles = "Lecturer")]
     public class CoursesController : ControllerBase
     {
         private readonly ICourseService _courseService;
@@ -25,11 +25,15 @@ namespace AI_Powered_Attendance_System.Controllers
 
         [HttpPost]
         [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(CourseResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<CourseResponseDto>> Create(
             [FromForm] CreateCourseRequestDto request,
             CancellationToken cancellationToken)
         {
-            // Validate the request
             var validationResult = await _validator.ValidateAsync(
                 request,
                 cancellationToken);
@@ -47,25 +51,21 @@ namespace AI_Powered_Attendance_System.Controllers
                 });
             }
 
-          
-            var userIdValue = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
 
             if (!Guid.TryParse(userIdValue, out var lecturerId))
             {
                 return Unauthorized();
             }
 
-           
             var course = await _courseService.CreateAsync(
                 request,
                 lecturerId,
                 cancellationToken);
 
-            return CreatedAtAction(
-                nameof(Create),
-                new { id = course.Id },
-                course);
+            
+            return StatusCode(StatusCodes.Status201Created, course);
         }
     }
 }

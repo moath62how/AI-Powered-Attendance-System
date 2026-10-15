@@ -29,10 +29,11 @@ namespace AI_Powered_Attendance_System.Services
                     u => u.Id == lecturerId,
                     cancellationToken);
 
+            
             if (lecturer is null ||
                 lecturer.Role != UserRole.Lecturer)
             {
-                throw new UnauthorizedException(
+                throw new ForbiddenException(
                     "Only lecturers can create courses.");
             }
 
@@ -77,6 +78,9 @@ namespace AI_Powered_Attendance_System.Services
                 uploadFolder,
                 fileName);
 
+            Course course;
+            var now = DateTime.UtcNow;
+
             await using (var stream = new FileStream(
                 filePath,
                 FileMode.CreateNew))
@@ -86,9 +90,7 @@ namespace AI_Powered_Attendance_System.Services
                     cancellationToken);
             }
 
-            var now = DateTime.UtcNow;
-
-            var course = new Course
+            course = new Course
             {
                 Id = Guid.NewGuid(),
                 CourseName = request.CourseName.Trim(),
@@ -103,7 +105,21 @@ namespace AI_Powered_Attendance_System.Services
 
             _db.Courses.Add(course);
 
-            await _db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                if (await _db.Courses.AnyAsync(c => c.CourseCode == courseCode, cancellationToken))
+                    throw new ConflictException("A course with this code already exists.");
+
+                throw;
+            }
 
             return new CourseResponseDto
             {
@@ -117,6 +133,5 @@ namespace AI_Powered_Attendance_System.Services
                 CreatedAtUtc = course.CreatedAtUtc
             };
         }
-
     }
 }

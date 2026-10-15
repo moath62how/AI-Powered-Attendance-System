@@ -26,8 +26,6 @@ public class AppDbContext : DbContext
                   .IsUnique()
                   .HasFilter("[StudentId] IS NOT NULL");
 
-            // A device can be bound to at most one account at a time.
-            // Filtered because multiple users will have a null MobileDeviceId.
             entity.HasIndex(u => u.MobileDeviceId)
                   .IsUnique()
                   .HasFilter("[MobileDeviceId] IS NOT NULL");
@@ -46,10 +44,15 @@ public class AppDbContext : DbContext
                   .HasForeignKey(r => r.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
-        modelBuilder.Entity<Course>()
-    .HasOne(c => c.Lecturer)
-    .WithMany()
-    .HasForeignKey(c => c.LecturerId)
-    .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Course>(entity =>
+        {
+            entity.HasIndex(c => c.CourseCode).IsUnique();
+
+            entity.HasOne(c => c.Lecturer)
+                  .WithMany()
+                  .HasForeignKey(c => c.LecturerId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }

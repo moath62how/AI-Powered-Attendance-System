@@ -64,6 +64,9 @@ namespace AI_Powered_Attendance_System.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CourseCode")
+                        .IsUnique();
+
                     b.HasIndex("LecturerId");
 
                     b.ToTable("Courses");
