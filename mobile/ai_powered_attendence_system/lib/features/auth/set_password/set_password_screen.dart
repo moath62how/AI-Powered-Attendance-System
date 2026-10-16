@@ -4,15 +4,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../widgets/auth_atmosphere.dart';
 import '../../../widgets/auth_back_button.dart';
+import '../data/repositories/auth_repository.dart';
 import '../login_screen.dart';
 import 'widgets/password_field.dart';
 import 'widgets/password_requirements.dart';
 
 /// Set / Reset Password screen — Figma node 199:1315 (setPassword) & 202:1688 (confirmPassword)
 class SetPasswordScreen extends StatefulWidget {
+  /// Email used to send the OTP (carried from ForgotPasswordScreen).
   final String? email;
 
-  const SetPasswordScreen({super.key, this.email});
+  /// The 5-digit OTP code entered in VerificationCodeScreen.
+  final String? otpCode;
+
+  const SetPasswordScreen({super.key, this.email, this.otpCode});
 
   @override
   State<SetPasswordScreen> createState() => _SetPasswordScreenState();
@@ -70,22 +75,38 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
+    final email = widget.email ?? '';
+    final code = widget.otpCode ?? '';
 
+    final result = await AuthRepository.resetPasswordWithCode(
+      email: email,
+      code: code,
+      newPassword: _newPasswordController.text,
+    );
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password set successfully! Please log in.'),
-        backgroundColor: AppColors.trueColor,
-      ),
-    );
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    switch (result) {
+      case AuthSuccess():
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset successfully! Please log in.'),
+            backgroundColor: AppColors.trueColor,
+          ),
+        );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      case AuthFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: AppColors.wrong,
+          ),
+        );
+    }
   }
 
   // ─── Build ─────────────────────────────────────────────────────────────────

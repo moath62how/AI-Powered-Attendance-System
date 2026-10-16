@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../widgets/auth_atmosphere.dart';
 import '../../widgets/auth_back_button.dart';
+import 'data/repositories/auth_repository.dart';
 import 'verification_code_screen.dart';
 
 /// Forgot Password screen — Figma node 152:895 (FinalForget) & 152:896 (AuthShell)
@@ -32,17 +33,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final email = _emailController.text.trim();
     setState(() => _isLoading = true);
 
-    // Simulate sending reset instructions / OTP verification request
-    await Future.delayed(const Duration(milliseconds: 700));
+    final result = await AuthRepository.forgotPassword(email);
     if (!mounted) return;
-
     setState(() => _isLoading = false);
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VerificationCodeScreen(email: email),
-      ),
-    );
+    switch (result) {
+      case AuthSuccess():
+        // Always navigate to OTP screen — backend doesn't leak whether
+        // the email actually exists (prevents enumeration).
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VerificationCodeScreen(email: email),
+          ),
+        );
+      case AuthFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: AppColors.wrong,
+          ),
+        );
+    }
   }
 
   @override

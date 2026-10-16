@@ -4,9 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import 'create_account_screen.dart';
+import 'data/repositories/auth_repository.dart';
 import 'forgot_password_screen.dart';
+import 'widgets/login/dont_have_account_card.dart';
+import 'widgets/login/login_atmosphere.dart';
+import 'widgets/login/login_header.dart';
+import 'widgets/login/login_method_toggle.dart';
+import 'widgets/login/login_text_field.dart';
 
-enum LoginMethod { email, studentId }
+export 'widgets/login/login_method_toggle.dart' show LoginMethod;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _onLogin() {
+  Future<void> _onLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -42,19 +48,30 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Simulate login flow
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logging in with ${_selectedMethod == LoginMethod.email ? _emailController.text : _studentIdController.text}...',
+    final identifier = _selectedMethod == LoginMethod.email
+        ? _emailController.text.trim()
+        : _studentIdController.text.trim();
+
+    final result = await AuthRepository.login(
+      identifier: identifier,
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    switch (result) {
+      case AuthSuccess():
+        // TODO: Navigate to the main home screen once it is built.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${result.data.user.fullName}!'),
+            backgroundColor: AppColors.ink,
           ),
-          backgroundColor: AppColors.ink,
-        ),
-      );
-    });
+        );
+      case AuthFailure():
+        setState(() => _errorMessage = result.message);
+    }
   }
 
   @override
@@ -73,28 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Atmospheric Glow Blobs (matching Figma node 148:403)
-            Positioned(
-              top: size.height * 0.06,
-              left: -blobSize * 0.30,
-              child: _AtmosphereBlob(color: AppColors.yellow, size: blobSize),
-            ),
-            Positioned(
-              top: size.height * 0.10,
-              right: -blobSize * 0.28,
-              child: _AtmosphereBlob(
-                color: AppColors.glowLavender,
-                size: blobSize * 1.1,
-              ),
-            ),
-            Positioned(
-              top: size.height * 0.45,
-              right: -blobSize * 0.32,
-              child: _AtmosphereBlob(
-                color: AppColors.blue,
-                size: blobSize * 0.9,
-              ),
-            ),
+            // Atmospheric Glow Blobs
+            LoginAtmosphere(size: size, blobSize: blobSize),
 
             // Foreground Content
             SafeArea(
@@ -108,123 +105,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 12),
-
-                          // Back button
-                          if (Navigator.of(context).canPop())
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.chevron_left,
-                                  size: 24,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            )
-                          else
-                            const SizedBox(height: 38),
-
-                          const SizedBox(height: 28),
-
-                          // Header Tag
-                          Center(
-                            child: Text(
-                              'UNIVERSITY ACCESS',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                letterSpacing: 1.4,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Main Title
-                          Center(
-                            child: Text(
-                              'Welcome to\nAttendify',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                height: 1.15,
-                                letterSpacing: -0.6,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Subtitle
-                          Center(
-                            child: Text(
-                              'Sign in with your university account',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
+                          const LoginHeader(),
                           const SizedBox(height: 32),
 
                           // Segmented Method Selector (University Email / Student ID)
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFECEAE5)
-                                  .withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _TabButton(
-                                    label: 'University Email',
-                                    isSelected:
-                                        _selectedMethod == LoginMethod.email,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedMethod = LoginMethod.email;
-                                        _errorMessage = null;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _TabButton(
-                                    label: 'Student ID',
-                                    isSelected:
-                                        _selectedMethod ==
-                                        LoginMethod.studentId,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedMethod = LoginMethod.studentId;
-                                        _errorMessage = null;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                          LoginMethodToggle(
+                            selectedMethod: _selectedMethod,
+                            onMethodChanged: (method) {
+                              setState(() {
+                                _selectedMethod = method;
+                                _errorMessage = null;
+                              });
+                            },
                           ),
                           const SizedBox(height: 24),
 
@@ -242,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 8),
 
                           // Identifier Text Field
-                          _CustomTextField(
+                          LoginTextField(
                             controller: _selectedMethod == LoginMethod.email
                                 ? _emailController
                                 : _studentIdController,
@@ -278,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 8),
 
                           // Password Text Field
-                          _CustomTextField(
+                          LoginTextField(
                             controller: _passwordController,
                             hintText: 'Enter your password',
                             prefixIcon: Icons.lock_outline_rounded,
@@ -383,63 +275,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 32),
 
                           // Don't have an account? Card
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: AppColors.cardBorder.withValues(
-                                  alpha: 0.6,
+                          DontHaveAccountCard(
+                            onCreateAccount: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CreateAccountScreen(),
                                 ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Don't have an account?",
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                InkWell(
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const CreateAccountScreen(),
-                                      ),
-                                    );
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE5E2DC),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      'Create account',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -450,152 +293,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TabButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _TabButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CustomTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hintText;
-  final IconData prefixIcon;
-  final bool obscureText;
-  final Widget? suffixIcon;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final bool hasError;
-
-  const _CustomTextField({
-    required this.controller,
-    required this.hintText,
-    required this.prefixIcon,
-    this.obscureText = false,
-    this.suffixIcon,
-    this.keyboardType,
-    this.validator,
-    this.hasError = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: GoogleFonts.inter(
-          fontSize: 13,
-          color: AppColors.textSecondary.withValues(alpha: 0.6),
-        ),
-        prefixIcon: Icon(
-          prefixIcon,
-          size: 20,
-          color: hasError ? AppColors.wrong : AppColors.textSecondary,
-        ),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.9),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: hasError ? AppColors.wrong : AppColors.cardBorder,
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: hasError ? AppColors.wrong : AppColors.cardBorder,
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: hasError ? AppColors.wrong : AppColors.ink,
-            width: 1.5,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.wrong, width: 1.2),
-        ),
-      ),
-    );
-  }
-}
-
-class _AtmosphereBlob extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _AtmosphereBlob({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color.withValues(alpha: 0.50), color.withValues(alpha: 0.0)],
         ),
       ),
     );

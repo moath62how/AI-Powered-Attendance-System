@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../widgets/auth_atmosphere.dart';
 import '../../widgets/auth_back_button.dart';
+import 'data/repositories/auth_repository.dart';
 import 'set_password/set_password_screen.dart';
 
 /// Verification Code (OTP) Screen — Figma node 178:592 & 178:593
@@ -12,10 +15,7 @@ import 'set_password/set_password_screen.dart';
 class VerificationCodeScreen extends StatefulWidget {
   final String email;
 
-  const VerificationCodeScreen({
-    super.key,
-    this.email = 'student@university.edu',
-  });
+  const VerificationCodeScreen({super.key, this.email = 'student@university.edu'});
 
   @override
   State<VerificationCodeScreen> createState() => _VerificationCodeScreenState();
@@ -23,28 +23,55 @@ class VerificationCodeScreen extends StatefulWidget {
 
 class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   static const int _codeLength = 5;
+  int _seconds = 60;
+  bool get _canResend => _seconds == 0;
+  Timer? _timer;
+  void _startTimer() {
+    _timer?.cancel();
+
+    setState(() {
+      _seconds = 60;
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_seconds > 0) {
+        setState(() {
+          _seconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
 
   final List<TextEditingController> _controllers = List.generate(
     _codeLength,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(
-    _codeLength,
-    (_) => FocusNode(),
-  );
+  final List<FocusNode> _focusNodes = List.generate(_codeLength, (_) => FocusNode());
 
   bool _isLoading = false;
 
   bool get _isComplete => _controllers.every((c) => c.text.trim().isNotEmpty);
 
   @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
+    _timer?.cancel();
+
+    for (final controller in _controllers) {
+      controller.dispose();
     }
-    for (final f in _focusNodes) {
-      f.dispose();
+
+    for (final focusNode in _focusNodes) {
+      focusNode.dispose();
     }
+
     super.dispose();
   }
 
@@ -84,29 +111,30 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     if (!_isComplete) return;
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+    // No server-side OTP validation here — the code + email are sent
+    // together with the new password in reset-password-with-code.
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SetPasswordScreen(
-          email: widget.email,
-        ),
+        builder: (_) => SetPasswordScreen(email: widget.email, otpCode: _enteredCode),
       ),
     );
   }
 
-  // ignore: unused_element
   String get _enteredCode => _controllers.map((c) => c.text.trim()).join();
 
   Future<void> _onResend() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('New verification code sent to ${widget.email}'),
-        backgroundColor: AppColors.ink,
-      ),
-    );
+    final result = await AuthRepository.forgotPassword(widget.email);
+    if (!mounted) return;
+    final (message, color) = switch (result) {
+      AuthSuccess() => ('New verification code sent to ${widget.email}', AppColors.ink),
+      AuthFailure(:final message) => (message, AppColors.wrong),
+    };
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -202,9 +230,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               maxLength: 1,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -227,10 +253,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: AppColors.textPrimary,
-                    width: 1.5,
-                  ),
+                  borderSide: const BorderSide(color: AppColors.textPrimary, width: 1.5),
                 ),
               ),
               onChanged: (val) => _onDigitChanged(index, val),
@@ -255,15 +278,25 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
             ),
           ),
           GestureDetector(
-            onTap: _onResend,
+            onTap: _canResend ? _onResend : null,
             child: Text(
               'Resend',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-                decoration: TextDecoration.underline,
+                color: _canResend ? AppColors.textPrimary : AppColors.textSecondary,
+                decoration: _canResend ? TextDecoration.underline : TextDecoration.none,
               ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'in ${(_seconds ~/ 60).toString().padLeft(2, '0')}:'
+            '${(_seconds % 60).toString().padLeft(2, '0')}',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -288,18 +321,13 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
             disabledBackgroundColor: const Color(0xFFB7B7B7),
             disabledForegroundColor: const Color(0xFF5B5B5B),
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: _isLoading
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: Colors.white,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                 )
               : Text(
                   'Confirm',
