@@ -72,6 +72,37 @@ namespace AI_Powered_Attendance_System.Migrations
                     b.ToTable("Courses");
                 });
 
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseTimetableEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("int");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "Day");
+
+                    b.ToTable("CourseTimetableEntries");
+                });
+
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -202,6 +233,17 @@ namespace AI_Powered_Attendance_System.Migrations
                         .IsRequired();
 
                     b.Navigation("Lecturer");
+                });
+
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseTimetableEntry", b =>
+                {
+                    b.HasOne("AI_Powered_Attendance_System.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.RefreshToken", b =>

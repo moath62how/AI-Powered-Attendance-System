@@ -37,6 +37,8 @@ public class Program
         // Refresh Token Service
         builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         builder.Services.AddScoped<IEmailService, EmailService>();
+
+
         // JWT Authentication
         var jwtSettings = builder.Configuration
             .GetSection("Jwt")
@@ -78,7 +80,10 @@ public class Program
         builder.Services.AddScoped<IAuthService, AuthService>();
         // Course Service
         builder.Services.AddScoped<ICourseService, CourseService>();
+        builder.Services.AddScoped< ICourseTimetableService, CourseTimetableService>();
+
         // OpenAPI
+
         builder.Services.AddOpenApi(options =>
         {
             options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
@@ -94,7 +99,7 @@ public class Program
         {
             app.MapOpenApi();
             app.MapScalarApiReference();
-        }   
+        }
 
         app.UseHttpsRedirection();
 

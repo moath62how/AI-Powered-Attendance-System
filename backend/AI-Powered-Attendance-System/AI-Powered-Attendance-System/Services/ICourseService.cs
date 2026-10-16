@@ -8,5 +8,14 @@ namespace AI_Powered_Attendance_System.Services
        CreateCourseRequestDto request,
        Guid lecturerId,
        CancellationToken cancellationToken = default);
+        Task<CourseResponseDto?> GetByIdAsync(
+      Guid courseId,
+      CancellationToken cancellationToken = default);
+
+
+        Task<bool> DeleteAsync(
+    Guid courseId,
+    Guid lecturerId,
+    CancellationToken cancellationToken = default);
     }
 }

@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Course> Courses { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<CourseTimetableEntry> CourseTimetableEntries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,19 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(c => c.LecturerId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<CourseTimetableEntry>(entity =>
+        {
+            entity.HasIndex(t => new
+            {
+                t.CourseId,
+                t.Day
+            });
+
+            entity.HasOne(t => t.Course)
+                  .WithMany()
+                  .HasForeignKey(t => t.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
