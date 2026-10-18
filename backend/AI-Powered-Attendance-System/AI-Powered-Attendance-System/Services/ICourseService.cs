@@ -12,6 +12,11 @@ namespace AI_Powered_Attendance_System.Services
       Guid courseId,
       CancellationToken cancellationToken = default);
 
+        Task<CourseResponseDto> UpdateAsync(
+            Guid courseId,
+            UpdateCourseRequestDto request,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default);
 
         Task<bool> DeleteAsync(
     Guid courseId,

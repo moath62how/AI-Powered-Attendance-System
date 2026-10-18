@@ -50,6 +50,10 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(c => c.CourseCode).IsUnique();
 
+            entity.Property(c => c.EnrollmentMode)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+
             entity.HasOne(c => c.Lecturer)
                   .WithMany()
                   .HasForeignKey(c => c.LecturerId)

@@ -30,7 +30,6 @@ namespace AI_Powered_Attendance_System.Services
                     u => u.Id == lecturerId,
                     cancellationToken);
 
-
             if (lecturer is null ||
                 lecturer.Role != UserRole.Lecturer)
             {
@@ -38,7 +37,9 @@ namespace AI_Powered_Attendance_System.Services
                     "Only lecturers can create courses.");
             }
 
-            var courseCode = request.CourseCode.Trim().ToUpperInvariant();
+            var courseCode = request.CourseCode
+                .Trim()
+                .ToUpperInvariant();
 
             var courseExists = await _db.Courses
                 .AnyAsync(
@@ -52,19 +53,8 @@ namespace AI_Powered_Attendance_System.Services
             }
 
             var image = request.Image!;
-
-            var extension = image.ContentType switch
-            {
-                "image/jpeg" => ".jpg",
-                "image/png" => ".png",
-                _ => throw new ArgumentException(
-                    "Only JPG and PNG images are allowed.")
-            };
-
-            var webRootPath = _environment.WebRootPath
-                ?? Path.Combine(
-                    _environment.ContentRootPath,
-                    "wwwroot");
+            var extension = GetExtensionOrThrow(image.ContentType);
+            var webRootPath = GetWebRootPath();
 
             var uploadFolder = Path.Combine(
                 webRootPath,
@@ -74,13 +64,7 @@ namespace AI_Powered_Attendance_System.Services
             Directory.CreateDirectory(uploadFolder);
 
             var fileName = $"{Guid.NewGuid()}{extension}";
-
-            var filePath = Path.Combine(
-                uploadFolder,
-                fileName);
-
-            Course course;
-            var now = DateTime.UtcNow;
+            var filePath = Path.Combine(uploadFolder, fileName);
 
             await using (var stream = new FileStream(
                 filePath,
@@ -91,7 +75,9 @@ namespace AI_Powered_Attendance_System.Services
                     cancellationToken);
             }
 
-            course = new Course
+            var now = DateTime.UtcNow;
+
+            var course = new Course
             {
                 Id = Guid.NewGuid(),
                 CourseName = request.CourseName.Trim(),
@@ -99,6 +85,7 @@ namespace AI_Powered_Attendance_System.Services
                 Description = request.Description.Trim(),
                 Semester = request.Semester.Trim(),
                 ImagePath = $"/uploads/courses/{fileName}",
+                EnrollmentMode = CourseEnrollmentMode.Closed,
                 LecturerId = lecturerId,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
@@ -112,31 +99,173 @@ namespace AI_Powered_Attendance_System.Services
             }
             catch (DbUpdateException)
             {
-
                 if (File.Exists(filePath))
                     File.Delete(filePath);
 
-                if (await _db.Courses.AnyAsync(c => c.CourseCode == courseCode, cancellationToken))
-                    throw new ConflictException("A course with this code already exists.");
+                if (await _db.Courses.AnyAsync(
+                    c => c.CourseCode == courseCode,
+                    cancellationToken))
+                {
+                    throw new ConflictException(
+                        "A course with this code already exists.");
+                }
 
                 throw;
             }
 
-            return new CourseResponseDto
-            {
-                Id = course.Id,
-                CourseName = course.CourseName,
-                CourseCode = course.CourseCode,
-                Description = course.Description,
-                Semester = course.Semester,
-                ImagePath = course.ImagePath,
-                LecturerId = course.LecturerId,
-                CreatedAtUtc = course.CreatedAtUtc
-            };
+            return ToDto(course);
         }
-            public async Task<CourseResponseDto?> GetByIdAsync(
-    Guid courseId,
-    CancellationToken cancellationToken = default)
+
+        public async Task<CourseResponseDto> UpdateAsync(
+            Guid courseId,
+            UpdateCourseRequestDto request,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default)
+        {
+            var course = await _db.Courses
+                .FirstOrDefaultAsync(
+                    c => c.Id == courseId,
+                    cancellationToken);
+
+            if (course is null)
+                throw new NotFoundException("Course not found.");
+
+            if (course.LecturerId != lecturerId)
+            {
+                throw new ForbiddenException(
+                    "You are not allowed to edit this course.");
+            }
+
+            var webRootPath = GetWebRootPath();
+
+            string? newCourseCode = null;
+
+            if (request.CourseCode is not null)
+            {
+                newCourseCode = request.CourseCode
+                    .Trim()
+                    .ToUpperInvariant();
+
+                if (!string.Equals(
+                    newCourseCode,
+                    course.CourseCode,
+                    StringComparison.Ordinal))
+                {
+                    var codeTaken = await _db.Courses.AnyAsync(
+                        c => c.CourseCode == newCourseCode &&
+                             c.Id != courseId,
+                        cancellationToken);
+
+                    if (codeTaken)
+                    {
+                        throw new ConflictException(
+                            "A course with this code already exists.");
+                    }
+                }
+            }
+
+            // Prepare the new image without deleting the old image.
+            string? newImagePath = null;
+            string? newFilePath = null;
+
+            if (request.Image is not null)
+            {
+                var extension = GetExtensionOrThrow(
+                    request.Image.ContentType);
+
+                var uploadFolder = Path.Combine(
+                    webRootPath,
+                    "uploads",
+                    "courses");
+
+                Directory.CreateDirectory(uploadFolder);
+
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                newFilePath = Path.Combine(uploadFolder, fileName);
+
+                await using (var stream = new FileStream(
+                    newFilePath,
+                    FileMode.CreateNew))
+                {
+                    await request.Image.CopyToAsync(
+                        stream,
+                        cancellationToken);
+                }
+
+                newImagePath = $"/uploads/courses/{fileName}";
+            }
+
+            var oldImagePath = course.ImagePath;
+
+            if (request.CourseName is not null)
+                course.CourseName = request.CourseName.Trim();
+
+            if (newCourseCode is not null)
+                course.CourseCode = newCourseCode;
+
+            if (request.Description is not null)
+                course.Description = request.Description.Trim();
+
+            if (request.Semester is not null)
+                course.Semester = request.Semester.Trim();
+
+            if (request.EnrollmentMode is not null)
+            {
+                course.EnrollmentMode =
+                    Enum.Parse<CourseEnrollmentMode>(
+                        request.EnrollmentMode,
+                        ignoreCase: true);
+            }
+
+            if (newImagePath is not null)
+                course.ImagePath = newImagePath;
+
+            course.UpdatedAtUtc = DateTime.UtcNow;
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                // Remove the new image if the database update fails.
+                if (newFilePath is not null &&
+                    File.Exists(newFilePath))
+                {
+                    File.Delete(newFilePath);
+                }
+
+                if (newCourseCode is not null &&
+                    await _db.Courses.AnyAsync(
+                        c => c.CourseCode == newCourseCode &&
+                             c.Id != courseId,
+                        cancellationToken))
+                {
+                    throw new ConflictException(
+                        "A course with this code already exists.");
+                }
+
+                throw;
+            }
+
+            if (newImagePath is not null)
+            {
+                var oldFullPath = Path.Combine(
+                    webRootPath,
+                    oldImagePath
+                        .TrimStart('/')
+                        .Replace('/', Path.DirectorySeparatorChar));
+
+                if (File.Exists(oldFullPath))
+                    File.Delete(oldFullPath);
+            }
+
+            return ToDto(course);
+        }
+
+        public async Task<CourseResponseDto?> GetByIdAsync(
+            Guid courseId,
+            CancellationToken cancellationToken = default)
         {
             var course = await _db.Courses
                 .AsNoTracking()
@@ -172,22 +301,23 @@ namespace AI_Powered_Attendance_System.Services
                 Description = course.Description,
                 Semester = course.Semester,
                 ImagePath = course.ImagePath,
+                EnrollmentMode = course.EnrollmentMode.ToString(),
                 LecturerId = course.LecturerId,
                 CreatedAtUtc = course.CreatedAtUtc,
                 Timetable = timetable
             };
         }
+
         public async Task<bool> DeleteAsync(
-    Guid courseId,
-    Guid lecturerId,
-    CancellationToken cancellationToken = default)
+            Guid courseId,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default)
         {
             var course = await _db.Courses
                 .FirstOrDefaultAsync(
                     c => c.Id == courseId &&
                          c.LecturerId == lecturerId,
                     cancellationToken);
-
 
             if (course is null)
                 return false;
@@ -198,5 +328,34 @@ namespace AI_Powered_Attendance_System.Services
 
             return true;
         }
+
+      
+        private static string GetExtensionOrThrow(
+            string? contentType) => contentType switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                _ => throw new ArgumentException(
+                    "Only JPG and PNG images are allowed.")
+            };
+
+        private string GetWebRootPath() =>
+            _environment.WebRootPath
+            ?? Path.Combine(
+                _environment.ContentRootPath,
+                "wwwroot");
+
+        private static CourseResponseDto ToDto(Course course) => new()
+        {
+            Id = course.Id,
+            CourseName = course.CourseName,
+            CourseCode = course.CourseCode,
+            Description = course.Description,
+            Semester = course.Semester,
+            ImagePath = course.ImagePath,
+            EnrollmentMode = course.EnrollmentMode.ToString(),
+            LecturerId = course.LecturerId,
+            CreatedAtUtc = course.CreatedAtUtc
+        };
     }
-    }
+}

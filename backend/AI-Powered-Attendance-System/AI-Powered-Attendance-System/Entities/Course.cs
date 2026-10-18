@@ -26,6 +26,8 @@ namespace AI_Powered_Attendance_System.Entities
         [MaxLength(500)]
         public string ImagePath { get; set; } = string.Empty;
 
+        [Required]
+        public CourseEnrollmentMode EnrollmentMode { get; set; } = CourseEnrollmentMode.Closed;
         public Guid LecturerId { get; set; }
 
         public User Lecturer { get; set; } = null!;

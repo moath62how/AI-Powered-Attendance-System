@@ -16,6 +16,7 @@ namespace AI_Powered_Attendance_System.DTOs.Courses
 
         public string ImagePath { get; set; } = string.Empty;
 
+        public string EnrollmentMode { get; set; } = string.Empty;
         public Guid LecturerId { get; set; }
 
         public DateTime CreatedAtUtc { get; set; }

@@ -46,6 +46,11 @@ namespace AI_Powered_Attendance_System.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("EnrollmentMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("ImagePath")
                         .IsRequired()
                         .HasMaxLength(500)
