@@ -62,7 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     switch (result) {
       case AuthSuccess():
-        // TODO: Navigate to the main home screen once it is built.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Welcome back, ${result.data.user.fullName}!'),
@@ -217,24 +216,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: TextButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const ForgotPasswordScreen(),
-                                  ),
+                                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               child: Text(
                                 'Forgot password?',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
                               ),
                             ),
                           ),
@@ -278,9 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           DontHaveAccountCard(
                             onCreateAccount: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const CreateAccountScreen(),
-                                ),
+                                MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
                               );
                             },
                           ),

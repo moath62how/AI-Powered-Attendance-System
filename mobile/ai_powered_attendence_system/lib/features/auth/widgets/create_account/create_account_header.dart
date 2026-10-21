@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../widgets/server_config_dialog.dart';
 
 /// Header for Create Account screen displaying category badge, title, and subtitle
 class CreateAccountHeader extends StatelessWidget {
@@ -12,13 +13,34 @@ class CreateAccountHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'UNIVERSITY ACCESS',
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w500,
-            color: AppColors.badgeText,
+        GestureDetector(
+          onTap: () => ServerConfigDialog.show(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.dns_outlined,
+                  size: 11,
+                  color: AppColors.badgeText,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'UNIVERSITY ACCESS',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.badgeText,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 6),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../widgets/server_config_dialog.dart';
 
 /// Header for the Login Screen with optional back button, tag, title, and subtitle
 class LoginHeader extends StatelessWidget {
@@ -44,15 +45,36 @@ class LoginHeader extends StatelessWidget {
 
         const SizedBox(height: 28),
 
-        // Header Tag
+        // Header Tag (tap to change Server URL)
         Center(
-          child: Text(
-            'UNIVERSITY ACCESS',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              letterSpacing: 1.4,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+          child: GestureDetector(
+            onTap: () => ServerConfigDialog.show(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.dns_outlined,
+                    size: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'UNIVERSITY ACCESS',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      letterSpacing: 1.4,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
