@@ -28,14 +28,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingPageData(
       title: 'Your attendance,\nautomatically tracked',
-      description:
-          'Attendify detects your presence in class using proximity technology and records your attendance securely.',
+      description: 'Attendify detects your presence in class using proximity technology and records your attendance securely.',
       type: OnboardingIllustrationType.proximity,
     ),
     OnboardingPageData(
       title: 'Never lose track of\nyour attendance',
-      description:
-          'View your attendance percentage, class history, absences, and academic attendance insights in one place.',
+      description: 'View your attendance percentage, class history, absences, and academic attendance insights in one place.',
       type: OnboardingIllustrationType.stats,
     ),
   ];
@@ -52,17 +50,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isLast) {
       _navigateToAuth();
     } else {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
+      _controller.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
     }
   }
 
   void _navigateToAuth() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   @override
@@ -89,19 +82,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: kOnboardingMaxContentWidth,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: kOnboardingMaxContentWidth),
                   child: Stack(
                     children: [
+                      if (!_isLast)
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 0, 0),
+                            child: TextButton(
+                              onPressed: _navigateToAuth,
+                              child: Text(
+                                'Skip',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: Color.fromARGB(255, 77, 76, 76),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       Align(
                         alignment: Alignment.topRight,
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(0, 20, 24, 0),
-                          child: DotsIndicator(
-                            count: _pages.length,
-                            index: _index,
-                          ),
+                          child: DotsIndicator(count: _pages.length, index: _index),
                         ),
                       ),
                       Align(
