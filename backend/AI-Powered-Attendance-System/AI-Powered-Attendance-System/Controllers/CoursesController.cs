@@ -184,6 +184,33 @@ namespace AI_Powered_Attendance_System.Controllers
             {
                 message = "Course deleted successfully."
             });
+
+
+        }
+        [HttpGet("{id:guid}/management")]
+        [Authorize(Roles = "Lecturer")]
+        [ProducesResponseType(typeof(CourseManagementResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<CourseManagementResponseDto>> GetManagementDetails(
+        Guid id,
+        CancellationToken cancellationToken)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+
+            if (!Guid.TryParse(userIdValue, out var lecturerId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await _courseService.GetManagementDetailsAsync(
+                id,
+                lecturerId,
+                cancellationToken);
+
+            return Ok(result);
         }
     }
 }

@@ -2,15 +2,16 @@
 
 namespace AI_Powered_Attendance_System.Services
 {
-    public  interface ICourseService
+    public interface ICourseService
     {
         Task<CourseResponseDto> CreateAsync(
-       CreateCourseRequestDto request,
-       Guid lecturerId,
-       CancellationToken cancellationToken = default);
+            CreateCourseRequestDto request,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default);
+
         Task<CourseResponseDto?> GetByIdAsync(
-      Guid courseId,
-      CancellationToken cancellationToken = default);
+            Guid courseId,
+            CancellationToken cancellationToken = default);
 
         Task<CourseResponseDto> UpdateAsync(
             Guid courseId,
@@ -19,8 +20,14 @@ namespace AI_Powered_Attendance_System.Services
             CancellationToken cancellationToken = default);
 
         Task<bool> DeleteAsync(
-    Guid courseId,
-    Guid lecturerId,
-    CancellationToken cancellationToken = default);
+            Guid courseId,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default);
+
+        // Lecturer-only. Full management view: course info, timetable, and enrolled roster.
+        Task<CourseManagementResponseDto> GetManagementDetailsAsync(
+            Guid courseId,
+            Guid lecturerId,
+            CancellationToken cancellationToken = default);
     }
 }

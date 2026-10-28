@@ -14,7 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Course> Courses { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<CourseTimetableEntry> CourseTimetableEntries { get; set; }
-
+    public DbSet<CourseEnrollment> CourseEnrollments { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -70,6 +70,25 @@ public class AppDbContext : DbContext
             entity.HasOne(t => t.Course)
                   .WithMany()
                   .HasForeignKey(t => t.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<CourseEnrollment>(entity =>
+        {
+            // A student can have at most one enrollment record per course.
+            entity.HasIndex(e => new { e.CourseId, e.StudentId }).IsUnique();
+
+            entity.Property(e => e.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+
+            entity.HasOne(e => e.Course)
+                  .WithMany()
+                  .HasForeignKey(e => e.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Student)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }
