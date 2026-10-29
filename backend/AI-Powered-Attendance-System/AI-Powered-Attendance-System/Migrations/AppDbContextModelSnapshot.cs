@@ -77,6 +77,39 @@ namespace AI_Powered_Attendance_System.Migrations
                     b.ToTable("Courses");
                 });
 
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseEnrollment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RespondedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("CourseId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("CourseEnrollments");
+                });
+
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseTimetableEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -238,6 +271,25 @@ namespace AI_Powered_Attendance_System.Migrations
                         .IsRequired();
 
                     b.Navigation("Lecturer");
+                });
+
+            modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseEnrollment", b =>
+                {
+                    b.HasOne("AI_Powered_Attendance_System.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AI_Powered_Attendance_System.Entities.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("AI_Powered_Attendance_System.Entities.CourseTimetableEntry", b =>

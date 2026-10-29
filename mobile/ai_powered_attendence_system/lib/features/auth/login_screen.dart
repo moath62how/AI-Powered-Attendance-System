@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../lecturer/my_courses_screen.dart';
 import 'create_account_screen.dart';
 import 'data/repositories/auth_repository.dart';
 import 'forgot_password_screen.dart';
@@ -67,6 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
             content: Text('Welcome back, ${result.data.user.fullName}!'),
             backgroundColor: AppColors.ink,
           ),
+        );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+          (route) => false,
         );
       case AuthFailure():
         setState(() => _errorMessage = result.message);
@@ -138,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ? _emailController
                                 : _studentIdController,
                             hintText: _selectedMethod == LoginMethod.email
-                                ? 'student@university.edu'
+                                ? 'name@university.edu'
                                 : 'Enter your student ID',
                             prefixIcon: _selectedMethod == LoginMethod.email
                                 ? Icons.mail_outline_rounded

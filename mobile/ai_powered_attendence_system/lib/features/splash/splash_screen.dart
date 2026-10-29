@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../core/services/token_storage_service.dart';
 import '../../widgets/attendify_logo.dart';
 import '../../widgets/splash_atmosphere.dart';
+import '../lecturer/my_courses_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,12 +24,29 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
+    _checkInitialRoute();
+  }
+
+  void _checkInitialRoute() {
+    _timer = Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      final token = await TokenStorageService.getAccessToken();
+      final user = await TokenStorageService.getUser();
+      if (!mounted) return;
+
+      if (token != null && token.isNotEmpty && user != null) {
+        final role = user.role.toLowerCase();
+        if (role == 'lecturer' || role == 'teacher') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+          );
+          return;
+        }
       }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
     });
   }
 
