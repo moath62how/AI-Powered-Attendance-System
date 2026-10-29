@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../widgets/auth_atmosphere.dart';
 import '../../widgets/auth_back_button.dart';
+import '../lecturer/my_courses_screen.dart';
 import 'data/repositories/auth_repository.dart';
 import 'login_screen.dart';
 import 'widgets/create_account/already_have_account_card.dart';
@@ -72,7 +73,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     setState(() => _isLoading = true);
 
-    // Split full name into first / last name
     final nameParts = _nameController.text.trim().split(RegExp(r'\s+'));
     final firstName = nameParts.first;
     final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '.';
@@ -94,14 +94,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       case AuthSuccess():
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Account created! Welcome, ${result.data.fullName}. Please log in.'),
+            content: Text('Account created! Welcome, ${result.data.fullName}.'),
             backgroundColor: AppColors.trueColor,
           ),
         );
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+        final loginRes = await AuthRepository.login(
+          identifier: _emailController.text.trim(),
+          password: _passwordController.text,
         );
+        if (!mounted) return;
+        switch (loginRes) {
+          case AuthSuccess():
+            final isLecturer = loginRes.data.user.role.toLowerCase() == 'lecturer';
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => isLecturer ? const MyCoursesScreen() : const LoginScreen(),
+              ),
+              (route) => false,
+            );
+          case AuthFailure():
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+        }
       case AuthFailure():
         ScaffoldMessenger.of(
           context,
