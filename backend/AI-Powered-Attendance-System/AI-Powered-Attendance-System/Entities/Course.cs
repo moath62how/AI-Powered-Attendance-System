@@ -22,10 +22,8 @@ namespace AI_Powered_Attendance_System.Entities
         [MaxLength(50)]
         public string Semester { get; set; } = string.Empty;
 
-        [Required]
         [MaxLength(500)]
-        public string ImagePath { get; set; } = string.Empty;
-
+        public string? ImagePath { get; set; }
         [Required]
         public CourseEnrollmentMode EnrollmentMode { get; set; } = CourseEnrollmentMode.Closed;
         public Guid LecturerId { get; set; }
