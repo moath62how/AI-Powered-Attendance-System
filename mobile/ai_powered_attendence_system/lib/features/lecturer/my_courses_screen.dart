@@ -1,3 +1,4 @@
+import 'package:ai_powered_attendence_system/features/lecturer/data/repositories/course_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,11 +11,7 @@ import 'requests_screen.dart';
 import 'widgets/course_card.dart';
 import 'widgets/my_courses_header.dart';
 
-const List<Color> _kCardColors = [
-  Color(0xFFD9E9E4),
-  Color(0xFFFFFACC),
-  Color(0xFFF6E7E8),
-];
+const List<Color> _kCardColors = [Color(0xFFD9E9E4), Color(0xFFFFFACC), Color(0xFFF6E7E8)];
 
 //! My Courses Screen
 
@@ -26,62 +23,19 @@ class MyCoursesScreen extends StatefulWidget {
 }
 
 class _MyCoursesScreenState extends State<MyCoursesScreen> {
-  final List<CourseDto> _courses = [
-    const CourseDto(
-      id: '1',
-      name: 'Data Structures',
-      code: 'CS301',
-      department: 'CS',
-      description: 'Array, Linked List ...',
-      prerequisites: [
-        Prerequisite(courseCode: 'CS 103', minimumGrade: ''),
-        Prerequisite(courseCode: 'Math 402', minimumGrade: ''),
-      ],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 186,
-      avgAttendance: 84,
-      scheduleTime: '09:00 AM',
-      scheduleDay: 'Sunday',
-      hall: 'B2',
-    ),
-    const CourseDto(
-      id: '2',
-      name: 'Algorithms',
-      code: 'CS302',
-      department: 'CS',
-      description: 'Sorting, Graphs ...',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 142,
-      avgAttendance: 79,
-      scheduleTime: '11:00 AM',
-      scheduleDay: 'Tuesday',
-      hall: 'A3',
-    ),
-    const CourseDto(
-      id: '3',
-      name: 'Operating Systems',
-      code: 'CS401',
-      department: 'CS',
-      description: 'Processes, Memory ...',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.closed,
-      studentCount: 84,
-      avgAttendance: 91,
-      scheduleTime: '01:00 PM',
-      scheduleDay: 'Thursday',
-      hall: 'C1',
-    ),
-  ];
+  // i want to pass the get courses response to this screen and display it in the listview
+  final List<CourseDto> _courses = [];
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   //! Open New Course Screen
 
   Future<void> _openNewCourse() async {
-    final created = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const CreateEditCourseScreen(),
-      ),
-    );
+    final created = await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const CreateEditCourseScreen()));
     if (created is CourseResponseDto && mounted) {
       setState(() {
         _courses.insert(0, CourseDto.fromResponse(created));
@@ -92,11 +46,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   //! Open Edit Course Screen
 
   Future<void> _openEditCourse(CourseDto course) async {
-    final updated = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CreateEditCourseScreen(existingCourse: course),
-      ),
-    );
+    final updated = await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => CreateEditCourseScreen(existingCourse: course)));
     if (!mounted) return;
     if (updated is CourseResponseDto) {
       setState(() {
@@ -114,10 +65,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalStudents =
-        _courses.fold<int>(0, (sum, c) => sum + c.studentCount);
-    final semester =
-        'Fall 2026 . ${_courses.length} courses . $totalStudents students';
+    final totalStudents = _courses.fold<int>(0, (sum, c) => sum + c.studentCount);
+    final semester = 'Fall 2026 . ${_courses.length} courses . $totalStudents students';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -147,10 +96,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                             },
                           ),
                           const SizedBox(height: 14),
-                          MyCoursesHeader(
-                            semester: semester,
-                            onNewCourse: _openNewCourse,
-                          ),
+                          MyCoursesHeader(semester: semester, onNewCourse: _openNewCourse),
                         ],
                       ),
                     ),
@@ -167,11 +113,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                           cardColor: _kCardColors[index % _kCardColors.length],
                           onEdit: () => _openEditCourse(course),
                           onStudents: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const RequestsScreen(),
-                              ),
-                            );
+                            Navigator.of(context)
+                                .push(MaterialPageRoute(builder: (_) => const RequestsScreen()));
                           },
                         );
                       },
