@@ -46,10 +46,8 @@ class _PasswordSuccessScreenState extends State<PasswordSuccessScreen>
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
         pageBuilder: (_, _, _) => const LoginScreen(),
-        transitionsBuilder: (_, animation, _, child) => FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
+        transitionsBuilder: (_, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 380),
       ),
       (route) => false,
@@ -194,7 +192,11 @@ class _StarburstPainter extends CustomPainter {
       final r = i.isEven ? outerR : innerR;
       final x = cx + r * math.cos(angle);
       final y = cy + r * math.sin(angle);
-      if (i == 0) { path.moveTo(x, y); } else { path.lineTo(x, y); }
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     path.close();
     canvas.drawPath(path, Paint()..color = color);
@@ -237,4 +239,3 @@ class _GoToLoginButton extends StatelessWidget {
     );
   }
 }
-
