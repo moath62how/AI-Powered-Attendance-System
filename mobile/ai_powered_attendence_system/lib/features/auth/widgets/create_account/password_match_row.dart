@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/theme/app_colors.dart';
 import 'create_account_text_field.dart';
 
-/// Side-by-side Password and Repeat Password inputs with visibility toggles
+//! Password Match Row
+
 class PasswordMatchRow extends StatelessWidget {
   final TextEditingController passwordController;
   final TextEditingController confirmPasswordController;

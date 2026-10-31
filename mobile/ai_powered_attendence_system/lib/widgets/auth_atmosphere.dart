@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Soft atmospheric yellow and lavender radial glow painter matching Figma AuthShell.
+//! Auth Atmosphere
+
 class AuthAtmosphere extends StatelessWidget {
   const AuthAtmosphere({super.key});
 
@@ -18,7 +19,6 @@ class _AuthShellPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Top-left warm radial glow
     final yellowRect = Rect.fromCircle(
       center: Offset(size.width * -0.10, size.height * 0.45),
       radius: size.width * 1.6,
@@ -37,7 +37,6 @@ class _AuthShellPainter extends CustomPainter {
       yellowPaint,
     );
 
-    // Top-right lavender radial glow
     final lavenderRect = Rect.fromCircle(
       center: Offset(size.width * 0.86, size.height * 0.04),
       radius: size.width * 1.5,

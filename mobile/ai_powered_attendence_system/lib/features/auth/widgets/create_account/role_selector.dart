@@ -3,9 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
+//! Role Selector
+
 enum UserRole { student, lecturer }
 
-/// Role selector allowing users to switch between Student and Lecturer registration
 class RoleSelector extends StatelessWidget {
   final UserRole selectedRole;
   final ValueChanged<UserRole> onRoleChanged;
@@ -116,7 +117,6 @@ class _RoleButton extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Radio circle indicator
             AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               width: 18,

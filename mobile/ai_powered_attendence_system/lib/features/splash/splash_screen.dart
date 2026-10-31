@@ -12,6 +12,8 @@ import '../auth/data/repositories/auth_repository.dart';
 import '../lecturer/my_courses_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
+//! Splash Screen
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -37,7 +39,6 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
 
       if (token != null && token.isNotEmpty && user != null) {
-        // Silently ensure token is refreshed if expired
         if (refreshToken != null && refreshToken.isNotEmpty) {
           final refreshResult = await AuthRepository.refresh();
           if (refreshResult is AuthSuccess) {
@@ -58,16 +59,14 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 1400),
-          pageBuilder: (_, __, ___) => const OnboardingScreen(),
-          transitionsBuilder: (_, animation, __, child) {
-            // fastLinearToSlowEaseIn is the same curve Flutter uses for
-            // bottom sheets — gives the silkiest smooth upward motion
+          pageBuilder: (context, animation, secondaryAnimation) => const OnboardingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final smooth = CurvedAnimation(
               parent: animation,
               curve: Curves.fastLinearToSlowEaseIn,
             );
             final slide = Tween<Offset>(
-              begin: const Offset(0, 1.0), // starts fully below screen
+              begin: const Offset(0, 1.0),
               end: Offset.zero,
             ).animate(smooth);
             final fade = Tween<double>(begin: 0.0, end: 1.0).animate(

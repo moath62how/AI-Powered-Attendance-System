@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Concentric Proximity Radar Rings with User Icon for onboarding slide 2
+//! Proximity Illustration
+
 class ProximityIllustration extends StatelessWidget {
   const ProximityIllustration({super.key});
 

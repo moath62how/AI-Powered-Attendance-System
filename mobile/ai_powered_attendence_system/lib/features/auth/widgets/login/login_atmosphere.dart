@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Atmospheric Glow Blobs for the Login Screen (matching Figma node 148:403)
+//! Login Atmosphere
+
 class LoginAtmosphere extends StatelessWidget {
   final Size size;
   final double blobSize;

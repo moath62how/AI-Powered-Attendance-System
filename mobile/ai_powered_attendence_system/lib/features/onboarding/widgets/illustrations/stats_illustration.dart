@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Attendance Statistics Card (87% Circular Progress & Bars) for onboarding slide 3
+//! Stats Illustration
+
 class StatsIllustration extends StatelessWidget {
   const StatsIllustration({super.key});
 

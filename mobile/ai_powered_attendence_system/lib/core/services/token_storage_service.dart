@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/auth/data/models/auth_models.dart';
 
-/// Storage service for persisting JWT access/refresh tokens and user profile.
+//! Token Storage Service
+
 class TokenStorageService {
   static const String _accessTokenKey = 'attendify_access_token';
   static const String _refreshTokenKey = 'attendify_refresh_token';

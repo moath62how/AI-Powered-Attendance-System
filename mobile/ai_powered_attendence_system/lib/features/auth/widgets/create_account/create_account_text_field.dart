@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Label with optional asterisk marking required input fields
+//! Create Account Text Field
+
 class CreateAccountFieldLabel extends StatelessWidget {
   final String label;
   final bool isRequired;
@@ -36,7 +37,6 @@ class CreateAccountFieldLabel extends StatelessWidget {
   }
 }
 
-/// Custom styled text field for the Create Account form
 class CreateAccountTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../features/splash/splash_screen.dart';
 import 'theme/app_theme.dart';
 
+//! App Root
+
 class AttendifyApp extends StatelessWidget {
   const AttendifyApp({super.key});
 

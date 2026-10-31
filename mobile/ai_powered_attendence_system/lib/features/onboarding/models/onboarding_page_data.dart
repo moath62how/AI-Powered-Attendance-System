@@ -1,3 +1,5 @@
+//! Onboarding Page Data
+
 enum OnboardingIllustrationType { checkIn, proximity, stats }
 
 class OnboardingPageData {

@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Rotated "Checked in" glass card illustration for onboarding slide 1
+//! Check-In Illustration
+
 class CheckInIllustration extends StatelessWidget {
   const CheckInIllustration({super.key});
 

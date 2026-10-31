@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Interactive Checkbox and terms agreement text for Account Creation
+//! Terms Checkbox
+
 class TermsCheckbox extends StatelessWidget {
   final bool isAgreed;
   final ValueChanged<bool> onToggle;

@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app/theme/app_colors.dart';
 import '../core/network/api_config.dart';
 
-/// Modal dialog allowing developers and users to quickly switch backend server target
-/// between Wi-Fi IP (for physical devices), USB (adb reverse), or Emulator.
+//! Server Config Dialog
+
 class ServerConfigDialog extends StatefulWidget {
   const ServerConfigDialog({super.key});
 
@@ -127,7 +127,6 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             ),
             const SizedBox(height: 18),
 
-            // Quick preset chips
             Text(
               'QUICK PRESETS',
               style: GoogleFonts.inter(
@@ -164,7 +163,6 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             ),
             const SizedBox(height: 16),
 
-            // URL input
             TextFormField(
               controller: _controller,
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary),
@@ -185,7 +183,6 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             ),
             const SizedBox(height: 20),
 
-            // Actions
             Row(
               children: [
                 TextButton(

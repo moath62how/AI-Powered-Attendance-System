@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Checkbox row: "Password saved safely?"
+//! Password Requirements
+
 class RememberSafelyCheckbox extends StatelessWidget {
   final bool isChecked;
   final VoidCallback onToggle;
@@ -61,17 +62,12 @@ class _Checkbox extends StatelessWidget {
   }
 }
 
-/// Live checklist showing which password requirements are satisfied.
-///
-/// [hasUserTyped] — once the user has started typing, unsatisfied rules
-/// switch from neutral grey to red (matching Figma node 202:1422).
 class PasswordRequirementsList extends StatelessWidget {
   final bool hasMin8Chars;
   final bool hasNumber;
   final bool hasNoSpaces;
   final bool hasSpecialChar;
 
-  /// True as soon as the new-password field is non-empty.
   final bool hasUserTyped;
 
   const PasswordRequirementsList({
@@ -139,10 +135,6 @@ class _RequirementItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Colour logic matching Figma:
-    //  • Satisfied           → #006C4A  (AppColors.trueColor)
-    //  • Unsatisfied + typed → #A21015  (AppColors.wrong)
-    //  • Unsatisfied + empty → #A7A7A7  (neutral grey)
     final Color color;
     final IconData icon;
 

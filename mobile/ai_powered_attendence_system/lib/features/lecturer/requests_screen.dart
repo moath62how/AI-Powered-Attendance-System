@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -318,7 +319,10 @@ class _RequestsScreenState extends State<RequestsScreen>
           declineLabel: declineLabel,
           onAccept: () => _handleAccept(req.id, req.type),
           onDecline: () => _handleDecline(req.id, req.type),
-        );
+        )
+            .animate(delay: (index < 8 ? index * 80 : 0).ms)
+            .fadeIn()
+            .slideY(begin: 0.2);
       },
     );
   }

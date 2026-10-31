@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// A password text-field with a lock prefix icon and a visibility toggle.
+//! Password Field
+
 class PasswordField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -87,7 +88,6 @@ class PasswordField extends StatelessWidget {
   }
 }
 
-/// Required field label with a trailing red asterisk.
 class _FieldLabel extends StatelessWidget {
   final String label;
   const _FieldLabel(this.label);

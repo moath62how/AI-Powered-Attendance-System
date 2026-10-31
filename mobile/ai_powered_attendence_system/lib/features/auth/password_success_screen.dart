@@ -8,11 +8,8 @@ import '../../app/theme/app_colors.dart';
 import '../../widgets/auth_atmosphere.dart';
 import 'login_screen.dart';
 
-/// Password-created success screen — Figma node 448:1289
-///
-/// Displayed immediately after the user successfully creates / resets their
-/// password.  A centred glassmorphism card shows a star-check icon, a success
-/// heading, a subtitle, and a "Go To Login" CTA that clears the back-stack.
+//! Password Success Screen
+
 class PasswordSuccessScreen extends StatefulWidget {
   const PasswordSuccessScreen({super.key});
 

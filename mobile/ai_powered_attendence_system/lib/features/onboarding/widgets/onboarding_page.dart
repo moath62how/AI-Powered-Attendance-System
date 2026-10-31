@@ -7,9 +7,10 @@ import 'illustrations/check_in_illustration.dart';
 import 'illustrations/proximity_illustration.dart';
 import 'illustrations/stats_illustration.dart';
 
+//! Onboarding Page
+
 const double kOnboardingMaxContentWidth = 520;
 
-/// Individual page display within the onboarding PageView
 class OnboardingPage extends StatefulWidget {
   final OnboardingPageData data;
 
@@ -26,7 +27,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
-  // Staggered intervals within the 700 ms controller
   late final Animation<double> _illFade;
   late final Animation<double> _illScale;
   late final Animation<Offset> _labelSlide;
@@ -48,7 +48,6 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   void _buildAnimations() {
-    // Illustration: 0–60 %
     final illCurve = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
@@ -56,7 +55,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     _illFade = Tween<double>(begin: 0.0, end: 1.0).animate(illCurve);
     _illScale = Tween<double>(begin: 0.85, end: 1.0).animate(illCurve);
 
-    // Label: 30–65 %
     final labelCurve = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.3, 0.65, curve: Curves.easeOutCubic),
@@ -65,7 +63,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     _labelSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
         .animate(labelCurve);
 
-    // Title: 42–78 %
     final titleCurve = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.42, 0.78, curve: Curves.easeOutCubic),
@@ -74,7 +71,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     _titleSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
         .animate(titleCurve);
 
-    // Description: 55–90 %
     final descCurve = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.55, 0.9, curve: Curves.easeOutCubic),
@@ -103,16 +99,13 @@ class _OnboardingPageState extends State<OnboardingPage>
     final size = MediaQuery.of(context).size;
     final w = size.width;
 
-    // Relative sizes for responsive typography & components
     final titleSize = (w * 0.075).clamp(24.0, 34.0);
     final descSize = (w * 0.032).clamp(12.0, 15.0);
 
     return Stack(
       children: [
-        // Atmosphere Background Blobs sampled from Figma frames (Node 143:65)
         ..._buildBackgroundBlobs(widget.data.type, size, w),
 
-        // Foreground Content
         SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -124,7 +117,6 @@ class _OnboardingPageState extends State<OnboardingPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Illustration fitting top area
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 56, bottom: 16),
@@ -143,7 +135,6 @@ class _OnboardingPageState extends State<OnboardingPage>
                       ),
                     ),
 
-                    // Page Header Text & Body
                     FadeTransition(
                       opacity: _labelFade,
                       child: SlideTransition(
@@ -193,7 +184,6 @@ class _OnboardingPageState extends State<OnboardingPage>
                       ),
                     ),
 
-                    // Spacing for bottom action button
                     const SizedBox(height: 96),
                   ],
                 ),

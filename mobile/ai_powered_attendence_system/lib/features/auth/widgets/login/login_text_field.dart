@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Customized rounded input field for the Login Screen
+//! Login Text Field
+
 class LoginTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;

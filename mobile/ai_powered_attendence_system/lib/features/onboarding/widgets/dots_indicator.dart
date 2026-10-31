@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
 
-/// Animated dots indicator for the onboarding flow
+//! Dots Indicator
+
 class DotsIndicator extends StatelessWidget {
   final int count;
   final int index;

@@ -8,7 +8,6 @@ import '../services/auth_api_service.dart';
 
 export '../services/auth_api_service.dart' show ApiException;
 
-/// Result type wrapping either a success value or an error message.
 sealed class AuthResult<T> {
   const AuthResult();
 }
@@ -24,12 +23,8 @@ class AuthFailure<T> extends AuthResult<T> {
   const AuthFailure(this.message, {this.statusCode});
 }
 
-/// Business-logic layer for authentication.
-///
-/// Orchestrates [AuthApiService], [TokenStorageService], and [DeviceService].
-/// All public methods return [AuthResult] — screens never see raw exceptions.
 class AuthRepository {
-  // ─── Login ──────────────────────────────────────────────────────────────
+  //! Login
 
   static Future<AuthResult<AuthResponseDto>> login({
     required String identifier,
@@ -68,7 +63,7 @@ class AuthRepository {
     }
   }
 
-  // ─── Register ────────────────────────────────────────────────────────────
+  //! Register
 
   static Future<AuthResult<UserDto>> register({
     required String firstName,
@@ -105,7 +100,7 @@ class AuthRepository {
     }
   }
 
-  // ─── Forgot Password ─────────────────────────────────────────────────────
+  //! Forgot Password
 
   static Future<AuthResult<void>> forgotPassword(String email) async {
     try {
@@ -126,7 +121,7 @@ class AuthRepository {
     }
   }
 
-  // ─── Reset Password With OTP Code ────────────────────────────────────────
+  //! Reset Password With OTP Code
 
   static Future<AuthResult<void>> resetPasswordWithCode({
     required String email,
@@ -155,7 +150,7 @@ class AuthRepository {
     }
   }
 
-  // ─── Refresh Token ────────────────────────────────────────────────────────
+  //! Refresh Token
 
   static Future<AuthResult<AuthResponseDto>> refresh() async {
     try {
@@ -188,7 +183,7 @@ class AuthRepository {
     }
   }
 
-  // ─── Logout ───────────────────────────────────────────────────────────────
+  //! Logout
 
   static Future<void> logout() async {
     await TokenStorageService.clearAuth();

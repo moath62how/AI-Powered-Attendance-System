@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 
-/// Floating circular progress Next/Get Started button
+//! Next Button
+
 class OnboardingNextButton extends StatelessWidget {
   final String label;
   final double progress;

@@ -3,9 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
+//! Login Method Toggle
+
 enum LoginMethod { email, studentId }
 
-/// Segmented selector for logging in via University Email vs Student ID
 class LoginMethodToggle extends StatelessWidget {
   final LoginMethod selectedMethod;
   final ValueChanged<LoginMethod> onMethodChanged;

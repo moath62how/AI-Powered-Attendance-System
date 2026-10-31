@@ -1,10 +1,6 @@
-// Dart mirror of the backend's auth DTOs.
-// Mirrors: RegisterRequestDto, LoginRequestDto, AuthResponseDto, UserDto,
-//          ForgotPasswordRequestDto, ResetPasswordWithCodeRequestDto,
-//          RefreshTokenRequestDto.
 
 
-// ─── User ──────────────────────────────────────────────────────────────────
+//! User
 
 class UserDto {
   final String id;
@@ -58,7 +54,7 @@ class UserDto {
   }
 }
 
-// ─── Auth Response (Login / Refresh) ───────────────────────────────────────
+//! Auth Response (Login / Refresh)
 
 class AuthResponseDto {
   final String accessToken;
@@ -85,7 +81,7 @@ class AuthResponseDto {
   }
 }
 
-// ─── Login Request ─────────────────────────────────────────────────────────
+//! Login Request
 
 class LoginRequestDto {
   final String identifier;
@@ -110,7 +106,7 @@ class LoginRequestDto {
   }
 }
 
-// ─── Register Request ──────────────────────────────────────────────────────
+//! Register Request
 
 class RegisterRequestDto {
   final String firstName;
@@ -144,7 +140,7 @@ class RegisterRequestDto {
   }
 }
 
-// ─── Forgot Password Request ────────────────────────────────────────────────
+//! Forgot Password Request
 
 class ForgotPasswordRequestDto {
   final String email;
@@ -154,7 +150,7 @@ class ForgotPasswordRequestDto {
   Map<String, dynamic> toJson() => {'email': email};
 }
 
-// ─── Reset Password With Code (OTP) ────────────────────────────────────────
+//! Reset Password With Code (OTP)
 
 class ResetPasswordWithCodeRequestDto {
   final String email;
@@ -174,7 +170,7 @@ class ResetPasswordWithCodeRequestDto {
       };
 }
 
-// ─── Refresh Token Request ──────────────────────────────────────────────────
+//! Refresh Token Request
 
 class RefreshTokenRequestDto {
   final String refreshToken;

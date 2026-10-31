@@ -15,6 +15,8 @@ import 'widgets/login/login_text_field.dart';
 
 export 'widgets/login/login_method_toggle.dart' show LoginMethod;
 
+//! Login Screen
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -70,7 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MyCoursesScreen()),
+          MaterialPageRoute(
+            builder: (_) => result.data.user.role == 'Student'
+                ? Text('Welcome back, ${result.data.user.fullName}!')
+                : const MyCoursesScreen(),
+          ),
           (route) => false,
         );
       case AuthFailure():
@@ -94,10 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Atmospheric Glow Blobs
             LoginAtmosphere(size: size, blobSize: blobSize),
 
-            // Foreground Content
             SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -112,7 +116,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           const LoginHeader(),
                           const SizedBox(height: 32),
 
-                          // Segmented Method Selector (University Email / Student ID)
                           LoginMethodToggle(
                             selectedMethod: _selectedMethod,
                             onMethodChanged: (method) {
@@ -124,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Whole identifier card — label + field animate together
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 350),
                             transitionBuilder: (child, animation) {
@@ -133,17 +135,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     begin: const Offset(0.2, 0),
                                     end: Offset.zero,
                                   ).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                    ),
+                                    CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
                                   );
                               return FadeTransition(
                                 opacity: animation,
-                                child: SlideTransition(
-                                  position: slide,
-                                  child: child,
-                                ),
+                                child: SlideTransition(position: slide, child: child),
                               );
                             },
                             child: KeyedSubtree(
@@ -163,26 +159,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   LoginTextField(
-                                    controller:
-                                        _selectedMethod == LoginMethod.email
+                                    controller: _selectedMethod == LoginMethod.email
                                         ? _emailController
                                         : _studentIdController,
-                                    hintText:
-                                        _selectedMethod == LoginMethod.email
+                                    hintText: _selectedMethod == LoginMethod.email
                                         ? 'name@university.edu'
                                         : 'Enter your student ID',
-                                    prefixIcon:
-                                        _selectedMethod == LoginMethod.email
+                                    prefixIcon: _selectedMethod == LoginMethod.email
                                         ? Icons.mail_outline_rounded
                                         : Icons.badge_outlined,
-                                    keyboardType:
-                                        _selectedMethod == LoginMethod.email
+                                    keyboardType: _selectedMethod == LoginMethod.email
                                         ? TextInputType.emailAddress
                                         : TextInputType.text,
                                     validator: (val) {
                                       if (val == null || val.trim().isEmpty) {
-                                        return _selectedMethod ==
-                                                LoginMethod.email
+                                        return _selectedMethod == LoginMethod.email
                                             ? 'Please enter your university email'
                                             : 'Please enter your student ID';
                                       }
@@ -195,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 18),
 
-                          // Password Field Label
                           Text(
                             'Password *',
                             style: GoogleFonts.inter(
@@ -206,7 +196,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Password Text Field
                           LoginTextField(
                             controller: _passwordController,
                             hintText: 'Enter your password',
@@ -235,7 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
 
-                          // Error message if any
                           if (_errorMessage != null) ...[
                             const SizedBox(height: 8),
                             Text(
@@ -248,36 +236,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
 
-                          // Forgot Password
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const ForgotPasswordScreen(),
-                                  ),
+                                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               child: Text(
                                 'Forgot password?',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
                               ),
                             ),
                           ),
                           const SizedBox(height: 16),
 
-                          // Log In CTA Button
                           SizedBox(
                             width: double.infinity,
                             height: 52,
@@ -311,13 +289,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 32),
 
-                          // Don't have an account? Card
                           DontHaveAccountCard(
                             onCreateAccount: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const CreateAccountScreen(),
-                                ),
+                                MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
                               );
                             },
                           ),

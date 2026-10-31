@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'app/app.dart';
 import 'core/network/api_config.dart';
 
-/// Allows self-signed local development certificates (e.g., ASP.NET Core dev-certs)
+//! Main
+
 class DevHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {

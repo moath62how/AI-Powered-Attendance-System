@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../app/theme/app_colors.dart';
 
-/// Soft yellow / lavender glow behind the splash logo.
+//! Splash Atmosphere
+
 class SplashAtmosphere extends StatelessWidget {
   const SplashAtmosphere({super.key});
 

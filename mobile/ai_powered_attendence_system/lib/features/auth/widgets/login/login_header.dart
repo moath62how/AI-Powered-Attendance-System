@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../widgets/server_config_dialog.dart';
 
-/// Header for the Login Screen with optional back button, tag, title, and subtitle
+//! Login Header
+
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key});
 
@@ -15,7 +16,6 @@ class LoginHeader extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
 
-        // Back button (if navigable)
         if (Navigator.of(context).canPop())
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
@@ -45,7 +45,6 @@ class LoginHeader extends StatelessWidget {
 
         const SizedBox(height: 28),
 
-        // Header Tag (tap to change Server URL)
         Center(
           child: GestureDetector(
             onTap: () => ServerConfigDialog.show(context),
@@ -80,7 +79,6 @@ class LoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // Main Title
         Center(
           child: Text(
             'Welcome to\nAttendify',
@@ -96,7 +94,6 @@ class LoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // Subtitle
         Center(
           child: Text(
             'Sign in with your university account',

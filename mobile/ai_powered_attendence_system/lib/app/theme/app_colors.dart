@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Clean palette matching Figma design system colors ("Color styles").
 abstract final class AppColors {
-  // ═════════════════ Figma Palette ═════════════════
+  //! Figma Palette
 
   static const Color yellow = Color(0xFFFAF176);
   static const Color blue = Color(0xFFCBE6EF);
@@ -13,7 +12,7 @@ abstract final class AppColors {
   static const Color wrong = Color(0xFFB71C1C);
   static const Color trueColor = Color(0xFF00875A);
 
-  // ═════════════════ Additional Unique UI Colors ═════════════════
+  //! Additional Unique UI Colors
 
   static const Color ink = Color(0xFF111111);
   static const Color logoMark = Color(0xFF1C1C1C);

@@ -10,8 +10,8 @@ import '../../widgets/auth_back_button.dart';
 import 'data/repositories/auth_repository.dart';
 import 'set_password/set_password_screen.dart';
 
-/// Verification Code (OTP) Screen — Figma node 178:592 & 178:593
-/// User enters the 5-digit verification code sent to their email.
+//! Verification Code Screen
+
 class VerificationCodeScreen extends StatefulWidget {
   final String email;
 
@@ -78,7 +78,6 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   void _onDigitChanged(int index, String value) {
     if (value.isNotEmpty) {
       if (value.length > 1) {
-        // Handle pasting multi-digit code
         final digits = value.replaceAll(RegExp(r'\D'), '');
         for (int i = 0; i < _codeLength && i < digits.length; i++) {
           _controllers[i].text = digits[i];
@@ -111,8 +110,6 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     if (!_isComplete) return;
 
     setState(() => _isLoading = true);
-    // No server-side OTP validation here — the code + email are sent
-    // together with the new password in reset-password-with-code.
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     setState(() => _isLoading = false);

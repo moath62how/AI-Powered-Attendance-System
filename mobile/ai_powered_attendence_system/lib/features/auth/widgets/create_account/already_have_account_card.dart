@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Card at the bottom of Create Account screen prompting users to navigate to Log in
+//! Already Have Account Card
+
 class AlreadyHaveAccountCard extends StatelessWidget {
   final VoidCallback onLoginTap;
 

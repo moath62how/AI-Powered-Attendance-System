@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Card at the bottom of the Login Screen prompting users to create an account
+//! Don't Have Account Card
+
 class DontHaveAccountCard extends StatelessWidget {
   final VoidCallback onCreateAccount;
 

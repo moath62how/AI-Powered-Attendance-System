@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../widgets/server_config_dialog.dart';
 
-/// Header for Create Account screen displaying category badge, title, and subtitle
+//! Create Account Header
+
 class CreateAccountHeader extends StatelessWidget {
   const CreateAccountHeader({super.key});
 

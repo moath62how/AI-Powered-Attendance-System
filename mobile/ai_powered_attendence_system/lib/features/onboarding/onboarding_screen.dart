@@ -8,6 +8,8 @@ import 'widgets/dots_indicator.dart';
 import 'widgets/next_button.dart';
 import 'widgets/onboarding_page.dart';
 
+//! Onboarding Screen
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -60,8 +62,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 1400),
-        pageBuilder: (_, __, ___) => const LoginScreen(),
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final smooth = CurvedAnimation(
             parent: animation,
             curve: Curves.fastLinearToSlowEaseIn,
@@ -95,7 +97,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Page View
             PageView.builder(
               controller: _controller,
               itemCount: _pages.length,
@@ -103,7 +104,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               itemBuilder: (_, i) => OnboardingPage(data: _pages[i]),
             ),
 
-            // Top indicator & bottom next button overlay
             SafeArea(
               child: Center(
                 child: ConstrainedBox(

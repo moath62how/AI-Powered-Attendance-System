@@ -7,8 +7,8 @@ import '../../widgets/auth_back_button.dart';
 import 'data/repositories/auth_repository.dart';
 import 'verification_code_screen.dart';
 
-/// Forgot Password screen — Figma node 152:895 (FinalForget) & 152:896 (AuthShell)
-/// Allows the user to enter their university email to proceed with password reset.
+//! Forgot Password Screen
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -39,8 +39,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     switch (result) {
       case AuthSuccess():
-        // Always navigate to OTP screen — backend doesn't leak whether
-        // the email actually exists (prevents enumeration).
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => VerificationCodeScreen(email: email),

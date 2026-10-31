@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../app/theme/app_colors.dart';
 
+//! Attendify Logo
+
 class AttendifyLogo extends StatelessWidget {
   const AttendifyLogo({
     super.key,

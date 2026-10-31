@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../app/theme/app_colors.dart';
 
-/// Reusable circular back navigation button used across auth screens.
+//! Auth Back Button
+
 class AuthBackButton extends StatelessWidget {
   final VoidCallback? onTap;
 

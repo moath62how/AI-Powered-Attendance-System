@@ -17,6 +17,8 @@ import 'widgets/create_account/terms_checkbox.dart';
 
 export 'widgets/create_account/role_selector.dart' show UserRole;
 
+//! Create Account Screen
+
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
 

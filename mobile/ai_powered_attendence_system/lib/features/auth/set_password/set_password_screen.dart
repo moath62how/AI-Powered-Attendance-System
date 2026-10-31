@@ -9,12 +9,9 @@ import '../password_success_screen.dart';
 import 'widgets/password_field.dart';
 import 'widgets/password_requirements.dart';
 
-/// Set / Reset Password screen — Figma node 199:1315 (setPassword) & 202:1688 (confirmPassword)
 class SetPasswordScreen extends StatefulWidget {
-  /// Email used to send the OTP (carried from ForgotPasswordScreen).
   final String? email;
 
-  /// The 5-digit OTP code entered in VerificationCodeScreen.
   final String? otpCode;
 
   const SetPasswordScreen({super.key, this.email, this.otpCode});
@@ -33,7 +30,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   bool _rememberSafely = false;
   bool _isLoading = false;
 
-  // ─── Validation ────────────────────────────────────────────────────────────
+  //! Validation
 
   bool get _hasMin8Chars => _newPasswordController.text.length >= 8;
   bool get _hasNumber => RegExp(r'[0-9]').hasMatch(_newPasswordController.text);
@@ -52,7 +49,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
   bool get _isFormComplete => _isPasswordValid && _doPasswordsMatch;
 
-  // ─── Lifecycle ─────────────────────────────────────────────────────────────
+  //! Lifecycle
 
   @override
   void initState() {
@@ -68,7 +65,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     super.dispose();
   }
 
-  // ─── Actions ───────────────────────────────────────────────────────────────
+  //! Actions
 
   Future<void> _onConfirm() async {
     if (!_formKey.currentState!.validate() || !_isFormComplete) return;
@@ -110,7 +107,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     }
   }
 
-  // ─── Build ─────────────────────────────────────────────────────────────────
+  //! Build
 
   @override
   Widget build(BuildContext context) {
