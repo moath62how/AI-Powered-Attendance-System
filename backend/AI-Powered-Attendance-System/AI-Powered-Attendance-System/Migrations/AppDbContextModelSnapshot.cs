@@ -28,6 +28,11 @@ namespace AI_Powered_Attendance_System.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AcademicYear")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("CourseCode")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -71,7 +76,7 @@ namespace AI_Powered_Attendance_System.Migrations
                     b.HasIndex("CourseCode")
                         .IsUnique();
 
-                    b.HasIndex("LecturerId");
+                    b.HasIndex("LecturerId", "AcademicYear", "CreatedAtUtc");
 
                     b.ToTable("Courses");
                 });

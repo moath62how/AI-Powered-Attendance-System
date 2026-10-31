@@ -1,4 +1,6 @@
-﻿using AI_Powered_Attendance_System.DTOs.Courses;
+﻿using AI_Powered_Attendance_System.DTOs.Common;
+using AI_Powered_Attendance_System.DTOs.Courses;
+using AI_Powered_Attendance_System.Entities;
 
 namespace AI_Powered_Attendance_System.Services
 {
@@ -24,10 +26,17 @@ namespace AI_Powered_Attendance_System.Services
             Guid lecturerId,
             CancellationToken cancellationToken = default);
 
-        // Lecturer-only. Full management view: course info, timetable, and enrolled roster.
         Task<CourseManagementResponseDto> GetManagementDetailsAsync(
             Guid courseId,
             Guid lecturerId,
+            CancellationToken cancellationToken = default);
+
+        // Lecturer's own courses, optionally filtered by academic year, paginated.
+        Task<PagedResultDto<CourseListItemDto>> GetMyCoursesAsync(
+            Guid lecturerId,
+            AcademicYear? academicYear,
+            int page,
+            int pageSize,
             CancellationToken cancellationToken = default);
     }
 }

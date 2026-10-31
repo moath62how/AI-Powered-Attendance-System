@@ -6,6 +6,7 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
     public class UpdateCourseRequestValidator : AbstractValidator<UpdateCourseRequestDto>
     {
         private static readonly string[] AllowedEnrollmentModes = { "AutoApprove", "Closed" };
+        private static readonly string[] AllowedAcademicYears = { "First", "Second", "Third", "Fourth" };
 
         public UpdateCourseRequestValidator()
         {
@@ -31,6 +32,11 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
                 .NotEmpty().WithMessage("Course semester cannot be empty.")
                 .MaximumLength(50).WithMessage("Course semester must not exceed 50 characters.")
                 .When(x => x.Semester is not null);
+
+            RuleFor(x => x.AcademicYear)
+                .Must(year => AllowedAcademicYears.Contains(year, StringComparer.OrdinalIgnoreCase))
+                .WithMessage("Academic year must be one of: First, Second, Third, Fourth.")
+                .When(x => x.AcademicYear is not null);
 
             RuleFor(x => x.EnrollmentMode)
                 .Must(mode => AllowedEnrollmentModes.Contains(mode, StringComparer.OrdinalIgnoreCase))

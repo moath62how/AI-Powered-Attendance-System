@@ -5,6 +5,8 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
 {
     public class CreateCourseRequestValidator : AbstractValidator<CreateCourseRequestDto>
     {
+        private static readonly string[] AllowedAcademicYears = { "First", "Second", "Third", "Fourth" };
+
         public CreateCourseRequestValidator()
         {
             RuleFor(x => x.CourseName)
@@ -33,6 +35,12 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
                 .MaximumLength(50)
                 .WithMessage("Course semester must not exceed 50 characters.");
 
+            RuleFor(x => x.AcademicYear)
+                .NotEmpty()
+                .WithMessage("Academic year is required.")
+                .Must(year => AllowedAcademicYears.Contains(year, StringComparer.OrdinalIgnoreCase))
+                .WithMessage("Academic year must be one of: First, Second, Third, Fourth.");
+
             RuleFor(x => x.Image)
                 .Must(image => image!.Length > 0)
                 .WithMessage("Course image cannot be empty.")
@@ -40,6 +48,6 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
                                image.ContentType == "image/png")
                 .WithMessage("Course image must be JPG or PNG.")
                 .When(x => x.Image is not null);
-        }   
+        }
     }
 }

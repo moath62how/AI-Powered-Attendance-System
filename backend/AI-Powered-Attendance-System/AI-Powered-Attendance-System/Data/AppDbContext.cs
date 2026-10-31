@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<CourseTimetableEntry> CourseTimetableEntries { get; set; }
     public DbSet<CourseEnrollment> CourseEnrollments { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -50,7 +51,14 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(c => c.CourseCode).IsUnique();
 
+            // Supports the "my courses" query: filter by lecturer (+ year), sorted by newest.
+            entity.HasIndex(c => new { c.LecturerId, c.AcademicYear, c.CreatedAtUtc });
+
             entity.Property(c => c.EnrollmentMode)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+
+            entity.Property(c => c.AcademicYear)
                   .HasConversion<string>()
                   .HasMaxLength(20);
 
@@ -59,6 +67,7 @@ public class AppDbContext : DbContext
                   .HasForeignKey(c => c.LecturerId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<CourseTimetableEntry>(entity =>
         {
             entity.HasIndex(t => new
@@ -72,6 +81,7 @@ public class AppDbContext : DbContext
                   .HasForeignKey(t => t.CourseId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+
         modelBuilder.Entity<CourseEnrollment>(entity =>
         {
             // A student can have at most one enrollment record per course.

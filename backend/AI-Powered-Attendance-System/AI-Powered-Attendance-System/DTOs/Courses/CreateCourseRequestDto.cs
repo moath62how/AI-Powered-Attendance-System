@@ -12,6 +12,7 @@ namespace AI_Powered_Attendance_System.DTOs.Courses
         public string Description { get; set; } = string.Empty;
 
         public string Semester { get; set; } = string.Empty;
+        public string AcademicYear { get; set; } = string.Empty;
 
         public IFormFile? Image { get; set; }
     }
