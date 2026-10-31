@@ -22,8 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _pages = <OnboardingPageData>[
     OnboardingPageData(
       title: 'Attendance made\nsimple',
-      description:
-          'Track your attendance automatically and stay on top of your university classes.',
+      description: 'Track your attendance automatically and stay on top of your university classes.',
       type: OnboardingIllustrationType.checkIn,
     ),
     OnboardingPageData(
@@ -50,12 +49,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isLast) {
       _navigateToAuth();
     } else {
-      _controller.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
   void _navigateToAuth() {
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 1400),
+        pageBuilder: (_, __, ___) => const LoginScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          final smooth = CurvedAnimation(
+            parent: animation,
+            curve: Curves.fastLinearToSlowEaseIn,
+          );
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 1.0),
+            end: Offset.zero,
+          ).animate(smooth);
+          final fade = Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+          return FadeTransition(
+            opacity: fade,
+            child: SlideTransition(position: slide, child: child),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -82,7 +107,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: kOnboardingMaxContentWidth),
+                  constraints: const BoxConstraints(
+                    maxWidth: kOnboardingMaxContentWidth,
+                  ),
                   child: Stack(
                     children: [
                       if (!_isLast)
@@ -94,11 +121,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               onPressed: _navigateToAuth,
                               child: Text(
                                 'Skip',
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Color.fromARGB(255, 77, 76, 76),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: Color.fromARGB(255, 77, 76, 76),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                               ),
                             ),
                           ),
@@ -107,7 +135,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         alignment: Alignment.topRight,
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(0, 20, 24, 0),
-                          child: DotsIndicator(count: _pages.length, index: _index),
+                          child: DotsIndicator(
+                            count: _pages.length,
+                            index: _index,
+                          ),
                         ),
                       ),
                       Align(

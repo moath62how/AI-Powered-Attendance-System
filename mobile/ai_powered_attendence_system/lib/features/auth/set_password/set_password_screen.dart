@@ -5,7 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../widgets/auth_atmosphere.dart';
 import '../../../widgets/auth_back_button.dart';
 import '../data/repositories/auth_repository.dart';
-import '../login_screen.dart';
+import '../password_success_screen.dart';
 import 'widgets/password_field.dart';
 import 'widgets/password_requirements.dart';
 
@@ -89,14 +89,15 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
     switch (result) {
       case AuthSuccess():
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset successfully! Please log in.'),
-            backgroundColor: AppColors.trueColor,
-          ),
-        );
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          PageRouteBuilder(
+            pageBuilder: (_, _, _) => const PasswordSuccessScreen(),
+            transitionsBuilder: (_, animation, _, child) => FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+            transitionDuration: const Duration(milliseconds: 380),
+          ),
           (route) => false,
         );
       case AuthFailure():

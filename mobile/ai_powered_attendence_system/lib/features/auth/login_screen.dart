@@ -124,41 +124,74 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Identifier Field Label
-                          Text(
-                            _selectedMethod == LoginMethod.email
-                                ? 'University Email *'
-                                : 'Student ID *',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Identifier Text Field
-                          LoginTextField(
-                            controller: _selectedMethod == LoginMethod.email
-                                ? _emailController
-                                : _studentIdController,
-                            hintText: _selectedMethod == LoginMethod.email
-                                ? 'name@university.edu'
-                                : 'Enter your student ID',
-                            prefixIcon: _selectedMethod == LoginMethod.email
-                                ? Icons.mail_outline_rounded
-                                : Icons.badge_outlined,
-                            keyboardType: _selectedMethod == LoginMethod.email
-                                ? TextInputType.emailAddress
-                                : TextInputType.text,
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return _selectedMethod == LoginMethod.email
-                                    ? 'Please enter your university email'
-                                    : 'Please enter your student ID';
-                              }
-                              return null;
+                          // Whole identifier card — label + field animate together
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 350),
+                            transitionBuilder: (child, animation) {
+                              final slide =
+                                  Tween<Offset>(
+                                    begin: const Offset(0.2, 0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  );
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: slide,
+                                  child: child,
+                                ),
+                              );
                             },
+                            child: KeyedSubtree(
+                              key: ValueKey(_selectedMethod),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedMethod == LoginMethod.email
+                                        ? 'University Email *'
+                                        : 'Student ID *',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  LoginTextField(
+                                    controller:
+                                        _selectedMethod == LoginMethod.email
+                                        ? _emailController
+                                        : _studentIdController,
+                                    hintText:
+                                        _selectedMethod == LoginMethod.email
+                                        ? 'name@university.edu'
+                                        : 'Enter your student ID',
+                                    prefixIcon:
+                                        _selectedMethod == LoginMethod.email
+                                        ? Icons.mail_outline_rounded
+                                        : Icons.badge_outlined,
+                                    keyboardType:
+                                        _selectedMethod == LoginMethod.email
+                                        ? TextInputType.emailAddress
+                                        : TextInputType.text,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return _selectedMethod ==
+                                                LoginMethod.email
+                                            ? 'Please enter your university email'
+                                            : 'Please enter your student ID';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 18),
 
@@ -221,16 +254,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: TextButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ForgotPasswordScreen(),
+                                  ),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                               ),
                               child: Text(
                                 'Forgot password?',
-                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -274,7 +315,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           DontHaveAccountCard(
                             onCreateAccount: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const CreateAccountScreen(),
+                                ),
                               );
                             },
                           ),

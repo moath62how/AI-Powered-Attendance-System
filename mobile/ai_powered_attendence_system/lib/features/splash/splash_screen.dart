@@ -8,6 +8,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/services/token_storage_service.dart';
 import '../../widgets/attendify_logo.dart';
 import '../../widgets/splash_atmosphere.dart';
+import '../auth/data/repositories/auth_repository.dart';
 import '../lecturer/my_courses_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
@@ -30,11 +31,21 @@ class _SplashScreenState extends State<SplashScreen> {
   void _checkInitialRoute() {
     _timer = Timer(const Duration(seconds: 2), () async {
       if (!mounted) return;
-      final token = await TokenStorageService.getAccessToken();
+      var token = await TokenStorageService.getAccessToken();
       final user = await TokenStorageService.getUser();
+      final refreshToken = await TokenStorageService.getRefreshToken();
       if (!mounted) return;
 
       if (token != null && token.isNotEmpty && user != null) {
+        // Silently ensure token is refreshed if expired
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshResult = await AuthRepository.refresh();
+          if (refreshResult is AuthSuccess) {
+            token = await TokenStorageService.getAccessToken();
+          }
+        }
+
+        if (!mounted) return;
         final role = user.role.toLowerCase();
         if (role == 'lecturer' || role == 'teacher') {
           Navigator.of(context).pushReplacement(
@@ -45,7 +56,29 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 1400),
+          pageBuilder: (_, __, ___) => const OnboardingScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            // fastLinearToSlowEaseIn is the same curve Flutter uses for
+            // bottom sheets — gives the silkiest smooth upward motion
+            final smooth = CurvedAnimation(
+              parent: animation,
+              curve: Curves.fastLinearToSlowEaseIn,
+            );
+            final slide = Tween<Offset>(
+              begin: const Offset(0, 1.0), // starts fully below screen
+              end: Offset.zero,
+            ).animate(smooth);
+            final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            );
+            return FadeTransition(
+              opacity: fade,
+              child: SlideTransition(position: slide, child: child),
+            );
+          },
+        ),
       );
     });
   }
