@@ -11,6 +11,7 @@ namespace AI_Powered_Attendance_System.DTOs.Courses
         public string? Description { get; set; }
 
         public string? Semester { get; set; }
+        public string? AcademicYear { get; set; }
 
         // "AutoApprove" or "Closed"
         public string? EnrollmentMode { get; set; }

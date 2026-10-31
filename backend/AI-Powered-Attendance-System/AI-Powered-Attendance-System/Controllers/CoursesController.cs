@@ -4,6 +4,8 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AI_Powered_Attendance_System.DTOs.Common;
+using AI_Powered_Attendance_System.Entities;
 
 namespace AI_Powered_Attendance_System.Controllers
 {
@@ -211,6 +213,57 @@ namespace AI_Powered_Attendance_System.Controllers
                 cancellationToken);
 
             return Ok(result);
+    
+        }
+
+        [HttpGet("my")]
+        [Authorize(Roles = "Lecturer")]
+        [ProducesResponseType(typeof(PagedResultDto<CourseListItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<PagedResultDto<CourseListItemDto>>> GetMyCourses(
+    [FromQuery] MyCoursesQueryDto query,
+    [FromServices] IValidator<MyCoursesQueryDto> queryValidator,
+    CancellationToken cancellationToken)
+        {
+            var validationResult = await queryValidator.ValidateAsync(query, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Query validation failed.",
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        error = e.ErrorMessage
+                    })
+                });
+            }
+
+            // Lecturer ID comes only from the JWT, never from the client.
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+
+            if (!Guid.TryParse(userIdValue, out var lecturerId))
+            {
+                return Unauthorized();
+            }
+
+            AcademicYear? academicYear = query.AcademicYear is null
+                ? null
+                : Enum.Parse<AcademicYear>(query.AcademicYear.Trim(), ignoreCase: true);
+
+            var result = await _courseService.GetMyCoursesAsync(
+                lecturerId,
+                academicYear,
+                query.Page,
+                query.PageSize,
+                cancellationToken);
+
+            return Ok(result);
         }
     }
+
 }

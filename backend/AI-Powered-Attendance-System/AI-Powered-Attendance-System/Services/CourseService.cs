@@ -1,4 +1,5 @@
 ﻿using AI_Powered_Attendance_System.Data;
+using AI_Powered_Attendance_System.DTOs.Common;
 using AI_Powered_Attendance_System.DTOs.Courses;
 using AI_Powered_Attendance_System.DTOs.Timetable;
 using AI_Powered_Attendance_System.Entities;
@@ -80,6 +81,8 @@ namespace AI_Powered_Attendance_System.Services
                 CourseCode = courseCode,
                 Description = request.Description.Trim(),
                 Semester = request.Semester.Trim(),
+                // Validator guarantees this is one of the four allowed names.
+                AcademicYear = Enum.Parse<AcademicYear>(request.AcademicYear.Trim(), ignoreCase: true),
                 ImagePath = imagePath,
                 EnrollmentMode = CourseEnrollmentMode.Closed,
                 LecturerId = lecturerId,
@@ -194,6 +197,10 @@ namespace AI_Powered_Attendance_System.Services
             if (request.Semester is not null)
                 course.Semester = request.Semester.Trim();
 
+            // Omitted => existing value is preserved.
+            if (request.AcademicYear is not null)
+                course.AcademicYear = Enum.Parse<AcademicYear>(request.AcademicYear.Trim(), ignoreCase: true);
+
             if (request.EnrollmentMode is not null)
                 course.EnrollmentMode = Enum.Parse<CourseEnrollmentMode>(request.EnrollmentMode, ignoreCase: true);
 
@@ -265,7 +272,6 @@ namespace AI_Powered_Attendance_System.Services
             if (course is null)
                 throw new NotFoundException("Course not found.");
 
-            // Ownership check: only the lecturer who owns this course can see its management details.
             if (course.LecturerId != lecturerId)
                 throw new ForbiddenException("You are not allowed to view this course's management details.");
 
@@ -295,6 +301,7 @@ namespace AI_Powered_Attendance_System.Services
                 CourseCode = course.CourseCode,
                 Description = course.Description,
                 Semester = course.Semester,
+                AcademicYear = course.AcademicYear.ToString(),
                 ImagePath = course.ImagePath,
                 EnrollmentMode = course.EnrollmentMode.ToString(),
                 LecturerId = course.LecturerId,
@@ -302,6 +309,59 @@ namespace AI_Powered_Attendance_System.Services
                 Timetable = timetable,
                 EnrolledStudentsCount = enrolledStudents.Count,
                 EnrolledStudents = enrolledStudents
+            };
+        }
+
+        public async Task<PagedResultDto<CourseListItemDto>> GetMyCoursesAsync(
+            Guid lecturerId,
+            AcademicYear? academicYear,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            // Ownership is enforced here: the lecturer ID always comes from the JWT.
+            var query = _db.Courses
+                .AsNoTracking()
+                .Where(c => c.LecturerId == lecturerId);
+
+            // Filter first, so the count and the page both reflect the filter.
+            if (academicYear.HasValue)
+            {
+                var year = academicYear.Value;
+                query = query.Where(c => c.AcademicYear == year);
+            }
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var items = await query
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .ThenBy(c => c.Id) // stable tie-breaker so pages never overlap or skip rows
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new CourseListItemDto
+                {
+                    Id = c.Id,
+                    CourseName = c.CourseName,
+                    CourseCode = c.CourseCode,
+                    Description = c.Description,
+                    Semester = c.Semester,
+                    AcademicYear = c.AcademicYear.ToString(),
+                    ImagePath = c.ImagePath,
+                    EnrollmentMode = c.EnrollmentMode.ToString(),
+                    EnrolledStudentsCount = _db.CourseEnrollments.Count(e =>
+                        e.CourseId == c.Id &&
+                        e.Status == CourseEnrollmentStatus.Approved),
+                    CreatedAtUtc = c.CreatedAtUtc
+                })
+                .ToListAsync(cancellationToken);
+
+            return new PagedResultDto<CourseListItemDto>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
             };
         }
 
@@ -344,6 +404,7 @@ namespace AI_Powered_Attendance_System.Services
             CourseCode = course.CourseCode,
             Description = course.Description,
             Semester = course.Semester,
+            AcademicYear = course.AcademicYear.ToString(),
             ImagePath = course.ImagePath,
             EnrollmentMode = course.EnrollmentMode.ToString(),
             LecturerId = course.LecturerId,
