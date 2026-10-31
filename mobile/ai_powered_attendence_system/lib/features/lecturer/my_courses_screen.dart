@@ -1,8 +1,13 @@
+import 'package:ai_powered_attendence_system/features/auth/data/models/auth_models.dart';
+import 'package:ai_powered_attendence_system/features/auth/data/services/auth_api_service.dart';
+import 'package:ai_powered_attendence_system/features/auth/login_screen.dart';
+import 'package:ai_powered_attendence_system/features/lecturer/data/services/course_api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../core/services/token_storage_service.dart';
 import '../../widgets/auth_atmosphere.dart';
 import '../../widgets/auth_back_button.dart';
 import 'create_edit_course_screen.dart';
@@ -23,153 +28,89 @@ class MyCoursesScreen extends StatefulWidget {
 }
 
 class _MyCoursesScreenState extends State<MyCoursesScreen> {
-  final List<CourseDto> _courses = [
-    // i want to create 10 courses with random data for testing
-    CourseDto(
-      id: '1',
-      name: 'Introduction to Computer Science',
-      code: 'CS101',
-      department: 'Computer Science',
-      description: 'This course provides an introduction to the fundamental concepts of computer science, including algorithms, data structures, and programming languages.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '2',
-      name: 'Data Structures and Algorithms',
-      code: 'CS201',
-      department: 'Computer Science',
-      description: 'This course covers the design and analysis of data structures and algorithms, including arrays, linked lists, trees, graphs, sorting, and searching.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '3',
-      name: 'Database Systems',
-      code: 'CS301',
-      department: 'Computer Science',
-      description: 'This course introduces the principles of database systems, including data modeling, relational databases, SQL, and database design.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '4',
-      name: 'Operating Systems',
-      code: 'CS401',
-      department: 'Computer Science',
-      description: 'This course explores the concepts and design of operating systems, including process management, memory management, file systems, and concurrency.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '5',
-      name: 'Computer Networks',
-      code: 'CS501',
-      department: 'Computer Science',
-      description: 'This course covers the fundamentals of computer networking, including network protocols, architectures, and security.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '6',
-      name: 'Software Engineering',
-      code: 'CS601 ',
-      department: 'Computer Science',
-      description: 'This course introduces the principles and practices of software engineering, including software development life cycle, requirements analysis, design, testing, and maintenance.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '7',
-      name: 'Artificial Intelligence',
-      code: 'CS701',
-      department: 'Computer Science',
-      description: 'This course provides an introduction to artificial intelligence, including search algorithms, knowledge representation, reasoning, and machine learning.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '8',
-      name: 'Machine Learning',
-      code: 'CS801',
-      department: 'Computer Science',
-      description: 'This course covers the principles and techniques of machine learning, including supervised and unsupervised learning, neural networks, and deep learning.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '9',
-      name: 'Computer Graphics',
-      code: 'CS901',
-      department: 'Computer Science',
-      description: 'This course introduces the principles and techniques of computer graphics, including rendering, modeling, and animation.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-    CourseDto(
-      id: '10',
-      name: 'Human-Computer Interaction',
-      code: 'CS1001',
-      department: 'Computer Science',
-      description: 'This course explores the principles and techniques of human-computer interaction, including user interface design, usability testing, and user experience.',
-      prerequisites: [],
-      enrollmentStatus: EnrollmentStatus.open,
-      studentCount: 100,
-      avgAttendance: 85.5,
-      scheduleTime: '',
-      scheduleDay: '',
-      hall: '',
-    ),
-  ];
+  final List<CourseDto> _courses = [];
+
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    _loadCourses();
+  }
+
+  //! Load Courses
+
+  Future<void> _loadCourses() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      String? token = await TokenStorageService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        _redirectToLogin();
+        return;
+      }
+      try {
+        final fetched = await CourseApiService.getMyCourses(accessToken: token);
+        if (mounted) {
+          setState(() {
+            _courses
+              ..clear()
+              ..addAll(fetched);
+            _isLoading = false;
+          });
+        }
+      } on ApiException catch (e) {
+        if (e.statusCode == 401) {
+          //! Token expired — try refresh
+          final refreshToken = await TokenStorageService.getRefreshToken();
+          if (refreshToken == null || refreshToken.isEmpty) {
+            _redirectToLogin();
+            return;
+          }
+          try {
+            final auth = await AuthApiService.refresh(
+              RefreshTokenRequestDto(refreshToken: refreshToken),
+            );
+            await TokenStorageService.saveAuth(
+              accessToken: auth.accessToken,
+              refreshToken: auth.refreshToken,
+              user: auth.user,
+            );
+            //! Retry with new token
+            final fetched = await CourseApiService.getMyCourses(accessToken: auth.accessToken);
+            if (mounted) {
+              setState(() {
+                _courses
+                  ..clear()
+                  ..addAll(fetched);
+                _isLoading = false;
+              });
+            }
+          } catch (_) {
+            //! Refresh failed — send to login
+            await TokenStorageService.clearAuth();
+            _redirectToLogin();
+          }
+        } else {
+          if (mounted) setState(() { _isLoading = false; _error = e.message; });
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+    }
+  }
+
+  //! Redirect To Login
+
+  void _redirectToLogin() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   //! Open New Course Screen
@@ -242,29 +183,47 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                    sliver: SliverList.separated(
-                      itemCount: _courses.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 15),
-                      itemBuilder: (context, index) {
-                        final course = _courses[index];
-                        return CourseCard(
-                              course: course,
-                              cardColor: _kCardColors[index % _kCardColors.length],
-                              onEdit: () => _openEditCourse(course),
-                              onStudents: () {
-                                Navigator.of(
-                                  context,
-                                ).push(MaterialPageRoute(builder: (_) => const RequestsScreen()));
-                              },
-                            )
-                            .animate(delay: (index < 4 ? index * 100 : 0).ms)
-                            .fadeIn()
-                            .slideY(begin: 0.6, curve: Curves.easeOutCubic);
-                      },
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_error != null)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!, style: const TextStyle(color: Colors.red)),
+                            const SizedBox(height: 12),
+                            TextButton(onPressed: _loadCourses, child: const Text('Retry')),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                      sliver: SliverList.separated(
+                        itemCount: _courses.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 15),
+                        itemBuilder: (context, index) {
+                          final course = _courses[index];
+                          return CourseCard(
+                                course: course,
+                                cardColor: _kCardColors[index % _kCardColors.length],
+                                onEdit: () => _openEditCourse(course),
+                                onStudents: () {
+                                  Navigator.of(
+                                    context,
+                                  ).push(MaterialPageRoute(builder: (_) => const RequestsScreen()));
+                                },
+                              )
+                              .animate(delay: (index < 4 ? index * 100 : 0).ms)
+                              .fadeIn()
+                              .slideY(begin: 0.6, curve: Curves.easeOutCubic);
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

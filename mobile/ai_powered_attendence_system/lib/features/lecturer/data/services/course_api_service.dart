@@ -269,4 +269,31 @@ class CourseApiService {
     entryId: entryId,
     accessToken: accessToken,
   );
+
+  //! Get My Courses
+
+  static Future<List<CourseDto>> getMyCourses({
+    required String accessToken,
+    String? academicYear,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final queryParams = <String, String>{'Page': page.toString(), 'PageSize': pageSize.toString()};
+    if (academicYear != null && academicYear.trim().isNotEmpty) {
+      queryParams['AcademicYear'] = academicYear.trim();
+    }
+
+    final uri = Uri.parse(_url('Courses/my')).replace(queryParameters: queryParams);
+    final res = await http.get(uri, headers: _jsonHeaders(accessToken)).timeout(_timeout);
+
+    _assertOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body.containsKey('items') && body['items'] is List) {
+      final items = (body['items'] as List)
+          .map((e) => CourseDto.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return items;
+    }
+    return [];
+  }
 }

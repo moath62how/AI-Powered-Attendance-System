@@ -53,7 +53,7 @@ class CourseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${course.code} . ${course.department}',
+                '${course.code}  •  ${course.semester}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
