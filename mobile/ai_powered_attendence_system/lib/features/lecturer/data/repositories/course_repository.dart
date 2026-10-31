@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import '../../../../core/services/token_storage_service.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import '../models/course_models.dart';
 import '../services/course_api_service.dart';
 import 'timetable_repository.dart';
@@ -13,157 +14,96 @@ export 'timetable_repository.dart';
 //! Course Repository
 
 class CourseRepository {
-  static Future<String?> _getTokenOrNull() async {
-    return await TokenStorageService.getAccessToken();
-  }
-
   static const String _notLoggedInMsg =
       'You are not logged in. Please sign in to continue.';
+
+  //! Execute with Auto-Refresh
+
+  static Future<CourseResult<T>> _execute<T>(
+    Future<T> Function(String token) call,
+  ) async {
+    try {
+      var token = await TokenStorageService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
+      }
+
+      try {
+        final result = await call(token);
+        return CourseSuccess(result);
+      } on ApiException catch (e) {
+        if (e.statusCode == 401) {
+          final refreshRes = await AuthRepository.refresh();
+          if (refreshRes is AuthSuccess) {
+            final newToken = await TokenStorageService.getAccessToken();
+            if (newToken != null && newToken.isNotEmpty) {
+              final retried = await call(newToken);
+              return CourseSuccess(retried);
+            }
+          }
+        }
+        return CourseFailure(e.message, statusCode: e.statusCode);
+      }
+    } on ApiException catch (e) {
+      return CourseFailure(e.message, statusCode: e.statusCode);
+    } on SocketException {
+      return const CourseFailure(
+        'No internet connection. Please check your network.',
+      );
+    } on TimeoutException {
+      return const CourseFailure('Connection timed out. Please try again.');
+    } catch (e) {
+      return CourseFailure('Unexpected error: $e');
+    }
+  }
 
   //! Create Course
 
   static Future<CourseResult<CourseResponseDto>> createCourse({
     required CreateCourseRequestDto request,
-  }) async {
-    try {
-      final token = await _getTokenOrNull();
-      if (token == null || token.isEmpty) {
-        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
-      }
-
-      final result = await CourseApiService.createCourse(
-        request: request,
-        accessToken: token,
-      );
-      return CourseSuccess(result);
-    } on ApiException catch (e) {
-      return CourseFailure(e.message, statusCode: e.statusCode);
-    } on SocketException {
-      return const CourseFailure(
-        'No internet connection. Please check your network.',
-      );
-    } on TimeoutException {
-      return const CourseFailure('Connection timed out. Please try again.');
-    } catch (e) {
-      return CourseFailure('Unexpected error: $e');
-    }
-  }
+  }) =>
+      _execute((token) => CourseApiService.createCourse(
+            request: request,
+            accessToken: token,
+          ));
 
   //! Get Course By ID
 
-  static Future<CourseResult<CourseResponseDto>> getCourseById(
-    String id,
-  ) async {
-    try {
-      final token = await _getTokenOrNull();
-      if (token == null || token.isEmpty) {
-        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
-      }
-
-      final result = await CourseApiService.getCourseById(
-        id: id,
-        accessToken: token,
-      );
-      return CourseSuccess(result);
-    } on ApiException catch (e) {
-      return CourseFailure(e.message, statusCode: e.statusCode);
-    } on SocketException {
-      return const CourseFailure(
-        'No internet connection. Please check your network.',
-      );
-    } on TimeoutException {
-      return const CourseFailure('Connection timed out. Please try again.');
-    } catch (e) {
-      return CourseFailure('Unexpected error: $e');
-    }
-  }
+  static Future<CourseResult<CourseResponseDto>> getCourseById(String id) =>
+      _execute((token) => CourseApiService.getCourseById(
+            id: id,
+            accessToken: token,
+          ));
 
   //! Update Course
 
   static Future<CourseResult<CourseResponseDto>> updateCourse({
     required String id,
     required UpdateCourseRequestDto request,
-  }) async {
-    try {
-      final token = await _getTokenOrNull();
-      if (token == null || token.isEmpty) {
-        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
-      }
-
-      final result = await CourseApiService.updateCourse(
-        id: id,
-        request: request,
-        accessToken: token,
-      );
-      return CourseSuccess(result);
-    } on ApiException catch (e) {
-      return CourseFailure(e.message, statusCode: e.statusCode);
-    } on SocketException {
-      return const CourseFailure(
-        'No internet connection. Please check your network.',
-      );
-    } on TimeoutException {
-      return const CourseFailure('Connection timed out. Please try again.');
-    } catch (e) {
-      return CourseFailure('Unexpected error: $e');
-    }
-  }
+  }) =>
+      _execute((token) => CourseApiService.updateCourse(
+            id: id,
+            request: request,
+            accessToken: token,
+          ));
 
   //! Delete Course
 
-  static Future<CourseResult<void>> deleteCourse(String courseId) async {
-    try {
-      final token = await _getTokenOrNull();
-      if (token == null || token.isEmpty) {
-        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
-      }
+  static Future<CourseResult<void>> deleteCourse(String id) =>
+      _execute((token) => CourseApiService.deleteCourse(
+            courseId: id,
+            accessToken: token,
+          ));
 
-      await CourseApiService.deleteCourse(
-        courseId: courseId,
-        accessToken: token,
-      );
-      return const CourseSuccess(null);
-    } on ApiException catch (e) {
-      return CourseFailure(e.message, statusCode: e.statusCode);
-    } on SocketException {
-      return const CourseFailure(
-        'No internet connection. Please check your network.',
-      );
-    } on TimeoutException {
-      return const CourseFailure('Connection timed out. Please try again.');
-    } catch (e) {
-      return CourseFailure('Unexpected error: $e');
-    }
-  }
-
-  //! Get Course Management Details
+  //! Get Management Details
 
   static Future<CourseResult<CourseManagementResponseDto>> getManagementDetails(
     String id,
-  ) async {
-    try {
-      final token = await _getTokenOrNull();
-      if (token == null || token.isEmpty) {
-        return const CourseFailure(_notLoggedInMsg, statusCode: 401);
-      }
-
-      final result = await CourseApiService.getManagementDetails(
-        id: id,
-        accessToken: token,
-      );
-      return CourseSuccess(result);
-    } on ApiException catch (e) {
-      return CourseFailure(e.message, statusCode: e.statusCode);
-    } on SocketException {
-      return const CourseFailure(
-        'No internet connection. Please check your network.',
-      );
-    } on TimeoutException {
-      return const CourseFailure('Connection timed out. Please try again.');
-    } catch (e) {
-      return CourseFailure('Unexpected error: $e');
-    }
-  }
+  ) =>
+      _execute((token) => CourseApiService.getManagementDetails(
+            id: id,
+            accessToken: token,
+          ));
 
   //! Timetable Delegations
 

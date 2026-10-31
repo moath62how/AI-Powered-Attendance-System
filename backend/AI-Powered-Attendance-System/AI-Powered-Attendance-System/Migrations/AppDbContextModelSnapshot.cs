@@ -52,7 +52,6 @@ namespace AI_Powered_Attendance_System.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("ImagePath")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 

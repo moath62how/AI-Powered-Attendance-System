@@ -34,14 +34,12 @@ namespace AI_Powered_Attendance_System.DTOs.Validators
                 .WithMessage("Course semester must not exceed 50 characters.");
 
             RuleFor(x => x.Image)
-                .NotNull()
-                .WithMessage("Course image is required.")
-                .Must(image => image == null || image.Length > 0)
+                .Must(image => image!.Length > 0)
                 .WithMessage("Course image cannot be empty.")
-                .Must(image => image == null ||
-                               image.ContentType == "image/jpeg" ||
+                .Must(image => image!.ContentType == "image/jpeg" ||
                                image.ContentType == "image/png")
-                .WithMessage("Course image must be JPG or PNG.");
-        }
+                .WithMessage("Course image must be JPG or PNG.")
+                .When(x => x.Image is not null);
+        }   
     }
 }

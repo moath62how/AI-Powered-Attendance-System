@@ -50,18 +50,25 @@ namespace AI_Powered_Attendance_System.Services
                     "A course with this code already exists.");
             }
 
-            var image = request.Image!;
-            var extension = GetExtensionOrThrow(image.ContentType);
-            var webRootPath = GetWebRootPath();
-            var uploadFolder = Path.Combine(webRootPath, "uploads", "courses");
-            Directory.CreateDirectory(uploadFolder);
+            // Image is optional: only write a file if one was sent.
+            string? imagePath = null;
+            string? filePath = null;
 
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadFolder, fileName);
-
-            await using (var stream = new FileStream(filePath, FileMode.CreateNew))
+            if (request.Image is not null)
             {
-                await image.CopyToAsync(stream, cancellationToken);
+                var extension = GetExtensionOrThrow(request.Image.ContentType);
+                var uploadFolder = Path.Combine(GetWebRootPath(), "uploads", "courses");
+                Directory.CreateDirectory(uploadFolder);
+
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                filePath = Path.Combine(uploadFolder, fileName);
+
+                await using (var stream = new FileStream(filePath, FileMode.CreateNew))
+                {
+                    await request.Image.CopyToAsync(stream, cancellationToken);
+                }
+
+                imagePath = $"/uploads/courses/{fileName}";
             }
 
             var now = DateTime.UtcNow;
@@ -73,7 +80,7 @@ namespace AI_Powered_Attendance_System.Services
                 CourseCode = courseCode,
                 Description = request.Description.Trim(),
                 Semester = request.Semester.Trim(),
-                ImagePath = $"/uploads/courses/{fileName}",
+                ImagePath = imagePath,
                 EnrollmentMode = CourseEnrollmentMode.Closed,
                 LecturerId = lecturerId,
                 CreatedAtUtc = now,
@@ -88,7 +95,7 @@ namespace AI_Powered_Attendance_System.Services
             }
             catch (DbUpdateException)
             {
-                if (File.Exists(filePath))
+                if (filePath is not null && File.Exists(filePath))
                     File.Delete(filePath);
 
                 if (await _db.Courses.AnyAsync(c => c.CourseCode == courseCode, cancellationToken))
@@ -211,7 +218,8 @@ namespace AI_Powered_Attendance_System.Services
                 throw;
             }
 
-            if (newImagePath is not null)
+            // The old image may be null (course created without one), so guard it.
+            if (newImagePath is not null && !string.IsNullOrEmpty(oldImagePath))
             {
                 var oldFullPath = Path.Combine(
                     webRootPath,
