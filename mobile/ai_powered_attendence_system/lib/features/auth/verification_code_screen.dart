@@ -105,7 +105,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
       setState(() {});
     }
   }
-
+  //todo check the correctness of the otp to move to the next page
   Future<void> _onConfirm() async {
     if (!_isComplete) return;
 
