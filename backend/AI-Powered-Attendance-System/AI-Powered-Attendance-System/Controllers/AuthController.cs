@@ -127,6 +127,29 @@ public class AuthController : ControllerBase
         });
     }
 
+    [HttpPost("forgot-password-code")]
+    public async Task<IActionResult> ForgotPasswordWithCode(
+    ForgotPasswordRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var validation = await _forgotPasswordValidator.ValidateAsync(
+            request,
+            cancellationToken);
+
+        if (!validation.IsValid)
+            return ValidationProblem(
+                new ValidationProblemDetails(validation.ToDictionary()));
+
+        await _authService.ForgotPasswordWithCodeAsync(
+            request,
+            cancellationToken);
+
+        return Ok(new
+        {
+            message =
+                "If an account with this email exists, a password reset code will be sent."
+        });
+    }
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
