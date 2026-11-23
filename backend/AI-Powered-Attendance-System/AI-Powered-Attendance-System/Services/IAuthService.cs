@@ -1,4 +1,5 @@
-﻿using AI_Powered_Attendance_System.DTOs.Auth;
+﻿
+using AI_Powered_Attendance_System.DTOs.Auth;
 
 namespace AI_Powered_Attendance_System.Services;
 
@@ -16,7 +17,13 @@ public interface IAuthService
         RefreshTokenRequestDto request,
         CancellationToken cancellationToken = default);
 
+   
     Task ForgotPasswordAsync(
+        ForgotPasswordRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    
+    Task ForgotPasswordWithCodeAsync(
         ForgotPasswordRequestDto request,
         CancellationToken cancellationToken = default);
 
